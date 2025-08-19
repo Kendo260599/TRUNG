@@ -1,0 +1,535 @@
+// Professional Bat Trach Compass Functionality
+class ProfessionalCompass {
+    constructor() {
+        this.currentRotation = 0;
+        this.currentDirection = 0; // 0-359 degrees
+        this.isAutoMode = false;
+        this.selectedSector = null;
+        this.init();
+    }
+
+    init() {
+        this.setupCompassControls();
+        this.setupSectorInteractions();
+        this.setupDirectionDisplay();
+        this.startCompassUpdates();
+    }
+
+    setupCompassControls() {
+        // Add compass control buttons
+        const compassContainer = document.querySelector('.bat-trach-compass').parentElement;
+        const controlsHTML = `
+            <div class="compass-controls">
+                <button class="compass-btn" id="auto-compass">Tự Động</button>
+                <button class="compass-btn" id="manual-compass">Thủ Công</button>
+                <button class="compass-btn" id="reset-compass">Đặt Lại</button>
+                <button class="compass-btn" id="analyze-direction">Phân Tích Hướng</button>
+            </div>
+        `;
+        compassContainer.insertAdjacentHTML('afterend', controlsHTML);
+
+        // Add event listeners
+        document.getElementById('auto-compass').addEventListener('click', () => this.toggleAutoMode());
+        document.getElementById('manual-compass').addEventListener('click', () => this.enterManualMode());
+        document.getElementById('reset-compass').addEventListener('click', () => this.resetCompass());
+        document.getElementById('analyze-direction').addEventListener('click', () => this.analyzeCurrentDirection());
+    }
+
+    setupSectorInteractions() {
+        const sectors = document.querySelectorAll('.bagua-sector');
+        sectors.forEach(sector => {
+            sector.addEventListener('click', (e) => this.selectSector(e.target.closest('.bagua-sector')));
+            sector.addEventListener('mouseenter', (e) => this.highlightSector(e.target.closest('.bagua-sector')));
+            sector.addEventListener('mouseleave', (e) => this.unhighlightSector(e.target.closest('.bagua-sector')));
+        });
+    }
+
+    setupDirectionDisplay() {
+        // Update existing direction display
+        const directionDisplay = document.querySelector('.current-direction');
+        if (directionDisplay) {
+            this.updateDirectionDisplay();
+        }
+    }
+
+    toggleAutoMode() {
+        this.isAutoMode = !this.isAutoMode;
+        const btn = document.getElementById('auto-compass');
+        
+        if (this.isAutoMode) {
+            btn.textContent = 'Dừng Tự Động';
+            btn.classList.add('active');
+            this.startAutoRotation();
+        } else {
+            btn.textContent = 'Tự Động';
+            btn.classList.remove('active');
+            this.stopAutoRotation();
+        }
+    }
+
+    enterManualMode() {
+        this.isAutoMode = false;
+        document.getElementById('auto-compass').classList.remove('active');
+        document.getElementById('manual-compass').classList.add('active');
+        
+        // Add manual rotation controls
+        this.addManualControls();
+    }
+
+    addManualControls() {
+        const compass = document.querySelector('.bat-trach-compass');
+        compass.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            const delta = e.deltaY > 0 ? 5 : -5;
+            this.rotateCompass(delta);
+        });
+
+        // Add touch/drag support for mobile
+        let isDragging = false;
+        let lastAngle = 0;
+
+        compass.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            lastAngle = this.getAngleFromEvent(e, compass);
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            const currentAngle = this.getAngleFromEvent(e, compass);
+            const delta = currentAngle - lastAngle;
+            this.rotateCompass(delta);
+            lastAngle = currentAngle;
+        });
+
+        document.addEventListener('mouseup', () => {
+            isDragging = false;
+        });
+    }
+
+    getAngleFromEvent(event, element) {
+        const rect = element.getBoundingClientRect();
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
+        const mouseX = event.clientX;
+        const mouseY = event.clientY;
+        
+        const angle = Math.atan2(mouseY - centerY, mouseX - centerX);
+        return angle * (180 / Math.PI);
+    }
+
+    rotateCompass(degrees) {
+        this.currentRotation = (this.currentRotation + degrees) % 360;
+        this.currentDirection = (360 - this.currentRotation) % 360;
+        
+        const compass = document.querySelector('.bat-trach-compass');
+        compass.style.setProperty('--compass-rotation', `${this.currentRotation}deg`);
+        compass.classList.add('rotating');
+        
+        this.updateDirectionDisplay();
+        this.updateCurrentSector();
+        
+        setTimeout(() => {
+            compass.classList.remove('rotating');
+        }, 800);
+    }
+
+    updateDirectionDisplay() {
+        const directionDisplay = document.querySelector('.current-direction');
+        if (!directionDisplay) return;
+
+        const directions = [
+            { name: 'Bắc', min: 337.5, max: 22.5 },
+            { name: 'Đông Bắc', min: 22.5, max: 67.5 },
+            { name: 'Đông', min: 67.5, max: 112.5 },
+            { name: 'Đông Nam', min: 112.5, max: 157.5 },
+            { name: 'Nam', min: 157.5, max: 202.5 },
+            { name: 'Tây Nam', min: 202.5, max: 247.5 },
+            { name: 'Tây', min: 247.5, max: 292.5 },
+            { name: 'Tây Bắc', min: 292.5, max: 337.5 }
+        ];
+
+        const currentDir = directions.find(dir => {
+            if (dir.name === 'Bắc') {
+                return this.currentDirection >= dir.min || this.currentDirection <= dir.max;
+            }
+            return this.currentDirection >= dir.min && this.currentDirection < dir.max;
+        });
+
+        directionDisplay.querySelector('.direction-text').textContent = currentDir ? currentDir.name : 'Bắc';
+        directionDisplay.querySelector('.direction-degree').textContent = `${Math.round(this.currentDirection)}°`;
+    }
+
+    updateCurrentSector() {
+        // Highlight the sector that corresponds to current direction
+        const sectors = document.querySelectorAll('.bagua-sector');
+        sectors.forEach(sector => sector.classList.remove('current-sector'));
+
+        const sectorMap = {
+            'Khôn': { min: 202.5, max: 247.5 }, // Tây Nam
+            'Đối': { min: 247.5, max: 292.5 }, // Tây
+            'Càn': { min: 292.5, max: 337.5 }, // Tây Bắc
+            'Khảm': { min: 337.5, max: 22.5 },  // Bắc
+            'Cấn': { min: 22.5, max: 67.5 },   // Đông Bắc
+            'Chấn': { min: 67.5, max: 112.5 }, // Đông
+            'Tốn': { min: 112.5, max: 157.5 }, // Đông Nam
+            'Ly': { min: 157.5, max: 202.5 }   // Nam
+        };
+
+        for (const [name, range] of Object.entries(sectorMap)) {
+            const inRange = name === 'Khảm' ? 
+                (this.currentDirection >= range.min || this.currentDirection <= range.max) :
+                (this.currentDirection >= range.min && this.currentDirection < range.max);
+            
+            if (inRange) {
+                const sector = Array.from(sectors).find(s => 
+                    s.querySelector('.trigram-name') && 
+                    s.querySelector('.trigram-name').textContent.includes(name));
+                if (sector) {
+                    sector.classList.add('current-sector');
+                }
+                break;
+            }
+        }
+    }
+
+    selectSector(sector) {
+        // Remove previous selection
+        document.querySelectorAll('.bagua-sector').forEach(s => s.classList.remove('selected'));
+        
+        // Add selection to clicked sector
+        sector.classList.add('selected');
+        this.selectedSector = sector;
+
+        // Show detailed analysis
+        this.showSectorAnalysis(sector);
+    }
+
+    highlightSector(sector) {
+        sector.classList.add('highlighted');
+    }
+
+    unhighlightSector(sector) {
+        sector.classList.remove('highlighted');
+    }
+
+    showSectorAnalysis(sector) {
+        const trigramName = sector.querySelector('.trigram-name') ? sector.querySelector('.trigram-name').textContent : '';
+        const element = sector.querySelector('.trigram-element') ? sector.querySelector('.trigram-element').textContent : '';
+        const meaning = sector.querySelector('.trigram-meaning') ? sector.querySelector('.trigram-meaning').textContent : '';
+
+        // Create or update analysis panel
+        let analysisPanel = document.querySelector('.sector-analysis');
+        if (!analysisPanel) {
+            analysisPanel = document.createElement('div');
+            analysisPanel.className = 'sector-analysis';
+            document.querySelector('.compass-container').appendChild(analysisPanel);
+        }
+
+        const analysisData = this.getSectorAnalysis(trigramName, element);
+        
+        analysisPanel.innerHTML = `
+            <div class="analysis-header">
+                <h3>Phân Tích Cung ${trigramName}</h3>
+                <span class="element-badge ${element.toLowerCase()}">${element}</span>
+            </div>
+            <div class="analysis-content">
+                <p class="meaning"><strong>Ý nghĩa:</strong> ${meaning}</p>
+                <p class="characteristics"><strong>Đặc điểm:</strong> ${analysisData.characteristics}</p>
+                <p class="suitable-for"><strong>Phù hợp:</strong> ${analysisData.suitableFor}</p>
+                <p class="advice"><strong>Lời khuyên:</strong> ${analysisData.advice}</p>
+                <div class="colors">
+                    <strong>Màu sắc tốt:</strong>
+                    <div class="color-list">
+                        ${analysisData.colors.map(color => `<span class="color-tag" style="background-color: ${color.hex}">${color.name}</span>`).join('')}
+                    </div>
+                </div>
+            </div>
+        `;
+
+        analysisPanel.style.display = 'block';
+    }
+
+    getSectorAnalysis(trigram, element) {
+        const analyses = {
+            'Khôn': {
+                characteristics: 'Đất Mẹ, nuôi dưỡng, bao dung, kiên nhẫn',
+                suitableFor: 'Gia đình, mối quan hệ vợ chồng, sự nghiệp ổn định',
+                advice: 'Tăng cường năng lượng đất, tránh kim khí sắc bén',
+                colors: [
+                    { name: 'Vàng', hex: '#FFD700' },
+                    { name: 'Nâu', hex: '#8B4513' },
+                    { name: 'Cam nhạt', hex: '#FFA07A' }
+                ]
+            },
+            'Đối': {
+                characteristics: 'Kim trẻ, vui vẻ, sáng tạo, giao tiếp',
+                suitableFor: 'Con gái nhỏ, nghệ thuật, kinh doanh, học tập',
+                advice: 'Bổ sung kim khí, tránh hỏa quá mạnh',
+                colors: [
+                    { name: 'Trắng', hex: '#FFFFFF' },
+                    { name: 'Bạc', hex: '#C0C0C0' },
+                    { name: 'Vàng nhạt', hex: '#FFFACD' }
+                ]
+            },
+            'Càn': {
+                characteristics: 'Kim lão, quyền lực, lãnh đạo, cứng cỏi',
+                suitableFor: 'Nam giới trưởng thành, sự nghiệp, quyền lực',
+                advice: 'Tăng cường kim khí, cần sự cân bằng',
+                colors: [
+                    { name: 'Trắng', hex: '#FFFFFF' },
+                    { name: 'Xám bạc', hex: '#C0C0C0' },
+                    { name: 'Vàng kim', hex: '#FFD700' }
+                ]
+            },
+            'Khảm': {
+                characteristics: 'Thủy, trí tuệ, linh hoạt, sâu sắc',
+                suitableFor: 'Học tập, nghiên cứu, thiền định, sự nghiệp',
+                advice: 'Tăng cường kim sinh thủy, tránh thổ khắc thủy',
+                colors: [
+                    { name: 'Xanh đen', hex: '#000080' },
+                    { name: 'Đen', hex: '#000000' },
+                    { name: 'Xanh dương', hex: '#0000FF' }
+                ]
+            },
+            'Cấn': {
+                characteristics: 'Thổ trẻ, núi non, ổn định, kiên trì',
+                suitableFor: 'Con trai nhỏ, học tập, phát triển cá nhân',
+                advice: 'Bổ sung thổ khí, tránh mộc khắc thổ',
+                colors: [
+                    { name: 'Vàng', hex: '#FFD700' },
+                    { name: 'Nâu đất', hex: '#D2691E' },
+                    { name: 'Cam', hex: '#FFA500' }
+                ]
+            },
+            'Chấn': {
+                characteristics: 'Mộc trưởng, sấm sét, năng động, phát triển',
+                suitableFor: 'Nam giới trẻ, khởi nghiệp, phát triển',
+                advice: 'Tăng cường thủy sinh mộc, tránh kim khắc mộc',
+                colors: [
+                    { name: 'Xanh lá', hex: '#00FF00' },
+                    { name: 'Lục', hex: '#008000' },
+                    { name: 'Xanh đậm', hex: '#006400' }
+                ]
+            },
+            'Tốn': {
+                characteristics: 'Mộc trưởng thành, gió, linh hoạt, phát triển',
+                suitableFor: 'Nữ giới trưởng thành, sự nghiệp, tài chính',
+                advice: 'Bổ sung mộc khí, cần sự điều hòa',
+                colors: [
+                    { name: 'Xanh lá nhạt', hex: '#90EE90' },
+                    { name: 'Xanh mơ', hex: '#7FFFD4' },
+                    { name: 'Lục nhạt', hex: '#32CD32' }
+                ]
+            },
+            'Ly': {
+                characteristics: 'Hỏa, ánh sáng, trí tuệ, rực rỡ',
+                suitableFor: 'Nữ giới trung niên, danh tiếng, học tập',
+                advice: 'Tăng cường mộc sinh hỏa, tránh thủy khắc hỏa',
+                colors: [
+                    { name: 'Đỏ', hex: '#FF0000' },
+                    { name: 'Hồng', hex: '#FFC0CB' },
+                    { name: 'Tím', hex: '#800080' }
+                ]
+            }
+        };
+
+        return analyses[trigram] || {
+            characteristics: 'Cung Bát Quái đặc biệt',
+            suitableFor: 'Cần phân tích chi tiết',
+            advice: 'Tham khảo chuyên gia phong thủy',
+            colors: [{ name: 'Đa dạng', hex: '#888888' }]
+        };
+    }
+
+    startAutoRotation() {
+        if (this.autoRotationInterval) {
+            clearInterval(this.autoRotationInterval);
+        }
+        
+        this.autoRotationInterval = setInterval(() => {
+            if (this.isAutoMode) {
+                this.rotateCompass(2); // Rotate 2 degrees every 100ms
+            }
+        }, 100);
+    }
+
+    stopAutoRotation() {
+        if (this.autoRotationInterval) {
+            clearInterval(this.autoRotationInterval);
+            this.autoRotationInterval = null;
+        }
+    }
+
+    resetCompass() {
+        this.currentRotation = 0;
+        this.currentDirection = 0;
+        this.isAutoMode = false;
+        
+        const compass = document.querySelector('.bat-trach-compass');
+        compass.style.setProperty('--compass-rotation', '0deg');
+        
+        this.updateDirectionDisplay();
+        this.updateCurrentSector();
+        
+        // Reset buttons
+        document.getElementById('auto-compass').classList.remove('active');
+        document.getElementById('manual-compass').classList.remove('active');
+        
+        this.stopAutoRotation();
+    }
+
+    analyzeCurrentDirection() {
+        const direction = this.currentDirection;
+        const directionName = this.getDirectionName(direction);
+        
+        // Create analysis modal
+        this.showDirectionAnalysis(direction, directionName);
+    }
+
+    getDirectionName(degrees) {
+        const directions = [
+            { name: 'Bắc', min: 337.5, max: 22.5 },
+            { name: 'Đông Bắc', min: 22.5, max: 67.5 },
+            { name: 'Đông', min: 67.5, max: 112.5 },
+            { name: 'Đông Nam', min: 112.5, max: 157.5 },
+            { name: 'Nam', min: 157.5, max: 202.5 },
+            { name: 'Tây Nam', min: 202.5, max: 247.5 },
+            { name: 'Tây', min: 247.5, max: 292.5 },
+            { name: 'Tây Bắc', min: 292.5, max: 337.5 }
+        ];
+
+        return directions.find(dir => {
+            if (dir.name === 'Bắc') {
+                return degrees >= dir.min || degrees <= dir.max;
+            }
+            return degrees >= dir.min && degrees < dir.max;
+        })?.name || 'Bắc';
+    }
+
+    showDirectionAnalysis(degrees, directionName) {
+        // Create modal for direction analysis
+        const modal = document.createElement('div');
+        modal.className = 'direction-analysis-modal';
+        modal.innerHTML = `
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Phân Tích Hướng ${directionName}</h2>
+                    <span class="close-modal">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <div class="direction-info">
+                        <p><strong>Độ:</strong> ${Math.round(degrees)}°</p>
+                        <p><strong>Hướng:</strong> ${directionName}</p>
+                    </div>
+                    <div class="fengshui-analysis">
+                        ${this.getDirectionFengShuiAnalysis(directionName)}
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+
+        // Close modal functionality
+        modal.querySelector('.close-modal').onclick = () => {
+            document.body.removeChild(modal);
+        };
+
+        modal.onclick = (e) => {
+            if (e.target === modal) {
+                document.body.removeChild(modal);
+            }
+        };
+    }
+
+    getDirectionFengShuiAnalysis(direction) {
+        const analyses = {
+            'Bắc': {
+                element: 'Thủy',
+                energy: 'Âm',
+                meaning: 'Sự nghiệp, trí tuệ, dòng chảy',
+                advice: 'Tốt cho văn phòng, khu vực học tập. Tránh đặt bếp hoặc khu vực có lửa.',
+                colors: 'Đen, xanh đen, xanh dương'
+            },
+            'Đông Bắc': {
+                element: 'Thổ',
+                energy: 'Dương',
+                meaning: 'Tri thức, tâm linh, khởi đầu',
+                advice: 'Phù hợp cho phòng thiền, khu vực học tập. Bổ sung màu vàng, nâu.',
+                colors: 'Vàng, nâu, be'
+            },
+            'Đông': {
+                element: 'Mộc',
+                energy: 'Dương',
+                meaning: 'Gia đình, sức khỏe, tăng trưởng',
+                advice: 'Tốt cho phòng khách, khu vực sinh hoạt gia đình. Dùng màu xanh lá.',
+                colors: 'Xanh lá, lục, xanh nhạt'
+            },
+            'Đông Nam': {
+                element: 'Mộc',
+                energy: 'Âm',
+                meaning: 'Tài lộc, sự giàu có, thịnh vượng',
+                advice: 'Đặt khu vực làm việc, két sắt. Tránh màu đỏ, bổ sung màu xanh.',
+                colors: 'Xanh lá nhạt, tím nhạt'
+            },
+            'Nam': {
+                element: 'Hỏa',
+                energy: 'Dương',
+                meaning: 'Danh tiếng, sự nổi tiếng, ánh sáng',
+                advice: 'Tốt cho khu vực tiếp khách, phòng làm việc. Dùng màu đỏ, hồng.',
+                colors: 'Đỏ, hồng, cam, tím'
+            },
+            'Tây Nam': {
+                element: 'Thổ',
+                energy: 'Âm',
+                meaning: 'Tình yêu, mối quan hệ, mẹ',
+                advice: 'Phù hợp cho phòng ngủ chủ, khu vực gia đình. Dùng màu vàng, nâu.',
+                colors: 'Vàng, hồng nhạt, nâu'
+            },
+            'Tây': {
+                element: 'Kim',
+                energy: 'Âm',
+                meaning: 'Con cái, sáng tạo, vui vẻ',
+                advice: 'Tốt cho phòng trẻ em, khu vực giải trí. Dùng màu trắng, bạc.',
+                colors: 'Trắng, bạc, vàng kim'
+            },
+            'Tây Bắc': {
+                element: 'Kim',
+                energy: 'Dương',
+                meaning: 'Thầy, cha, người giúp đỡ',
+                advice: 'Phù hợp cho phòng làm việc của gia chủ. Bổ sung kim khí.',
+                colors: 'Trắng, xám bạc, vàng'
+            }
+        };
+
+        const analysis = analyses[direction];
+        if (!analysis) return '<p>Không có thông tin phân tích cho hướng này.</p>';
+
+        return `
+            <div class="analysis-section">
+                <h3>Ngũ Hành: ${analysis.element}</h3>
+                <p><strong>Năng lượng:</strong> ${analysis.energy}</p>
+                <p><strong>Ý nghĩa:</strong> ${analysis.meaning}</p>
+                <p><strong>Lời khuyên:</strong> ${analysis.advice}</p>
+                <p><strong>Màu sắc phù hợp:</strong> ${analysis.colors}</p>
+            </div>
+        `;
+    }
+
+    startCompassUpdates() {
+        // Update compass every second
+        setInterval(() => {
+            if (!this.isAutoMode) {
+                this.updateCurrentSector();
+            }
+        }, 1000);
+    }
+}
+
+// Initialize Professional Compass when DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Professional Compass after a delay to ensure all elements are loaded
+    setTimeout(() => {
+        window.professionalCompass = new ProfessionalCompass();
+    }, 1000);
+});

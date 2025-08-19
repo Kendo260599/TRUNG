@@ -1,0 +1,31 @@
+# Node, Python, editor
+node_modules/
+dist/
+build/
+.vscode/
+.env
+.DS_Store
+Thumbs.db
+__pycache__/
+venv/
+
+# Config files with sensitive data
+config.js
+
+# Test files và debug files (optional)
+*test*.html
+*debug*.html
+test-*.js
+debug-*.js
+
+# Backup files
+*-old.js
+*-backup.*
+*.bak
+
+# Server folders (không cần cho GitHub Pages)
+server/
+sever/
+
+# Documentation drafts
+*.draft.md

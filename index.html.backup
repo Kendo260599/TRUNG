@@ -1,0 +1,970 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Phong Thủy Lê Gia 🐲</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'feng-shui-gold': '#d4af37',
+            'feng-shui-red': '#8b1538',
+            'feng-shui-blue': '#1e3a8a',
+            'feng-shui-green': '#047857',
+            'feng-shui-orange': '#c2410c',
+            'feng-shui-brown': '#78350f',
+            'feng-shui-gray': '#374151',
+            'primary': '#1e3a8a',
+            'secondary': '#d4af37',
+            'accent': '#047857'
+          },
+          fontFamily: {
+            'vietnamese': ['Be Vietnam Pro', 'sans-serif']
+          },
+          animation: {
+            'spin-slow': 'spin 30s linear infinite',
+            'pulse-gold': 'pulse 4s ease-in-out infinite',
+            'glow': 'glow 4s ease-in-out infinite alternate',
+            'fade-in': 'fadeIn 0.5s ease-in-out',
+            'slide-up': 'slideUp 0.6s ease-out'
+          },
+          keyframes: {
+            glow: {
+              '0%': { boxShadow: '0 0 20px rgba(255, 215, 0, 0.5)' },
+              '100%': { boxShadow: '0 0 40px rgba(255, 215, 0, 0.8)' }
+            },
+            fadeIn: {
+              '0%': { opacity: '0' },
+              '100%': { opacity: '1' }
+            },
+            slideUp: {
+              '0%': { transform: 'translateY(20px)', opacity: '0' },
+              '100%': { transform: 'translateY(0)', opacity: '1' }
+            }
+          }
+        }
+      }
+    }
+  </script>
+  
+  <style>
+    html {
+      scroll-behavior: smooth;
+    }
+    
+    /* Loading states */
+    .loading {
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .loading::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+      animation: loading 1.5s infinite;
+    }
+    
+    @keyframes loading {
+      0% { left: -100%; }
+      100% { left: 100%; }
+    }
+    
+    /* Hover effects */
+    .hover-lift {
+      transition: all 0.3s ease;
+    }
+    
+    .hover-lift:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+    }
+    
+    /* Professional shadows */
+    .shadow-professional {
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Professional color scheme */
+    .btn-professional {
+      background: linear-gradient(135deg, #1e3a8a, #1e40af);
+      border: none;
+      transition: all 0.3s ease;
+    }
+    
+    .btn-professional:hover {
+      background: linear-gradient(135deg, #1e40af, #2563eb);
+      transform: translateY(-1px);
+      box-shadow: 0 8px 25px rgba(30, 58, 138, 0.3);
+    }
+
+    .card-professional {
+      background: rgba(255, 255, 255, 0.98);
+      border: 1px solid rgba(229, 231, 235, 0.8);
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    }
+  </style>
+  <link rel="stylesheet" href="style.css"/>
+  <link rel="stylesheet" href="compass-enhanced.css"/>
+  <link rel="stylesheet" href="d3-compass-styles.css"/>
+  
+  <!-- AI Configuration và Services -->
+  <script src="config.js"></script>
+  <script src="gemini-service.js"></script>
+  <script src="gemini-debug.js"></script>
+  <script src="ai-integration.js"></script>
+  <script src="gemini-test.js"></script>
+  
+  <script src="d3-compass.js" defer></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="min-h-screen bg-gradient-to-br from-gray-50 to-slate-100">
+    <!-- Navigation Bar -->
+    <nav class="bg-white/95 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-50 shadow-sm">
+      <div class="container mx-auto px-4">
+        <div class="flex items-center justify-between h-16">
+          <!-- Logo -->
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-gradient-to-br from-primary to-secondary rounded-full flex items-center justify-center">
+              <span class="text-sm text-white font-bold">LG</span>
+            </div>
+            <span class="text-xl font-bold text-primary">Lê Gia Phong Thủy</span>
+          </div>
+          
+          <!-- Navigation Menu -->
+          <div class="hidden md:flex items-center gap-6">
+            <a href="#input-section" class="text-gray-600 hover:text-primary transition-colors font-medium">Thông tin</a>
+            <a href="#compass-section" class="text-gray-600 hover:text-primary transition-colors font-medium">La bàn</a>
+            <a href="#numerology-section" class="text-gray-600 hover:text-primary transition-colors font-medium">Thần số</a>
+            <a href="#result-section" class="text-gray-600 hover:text-primary transition-colors font-medium">Kết quả</a>
+            <a href="#profiles-section" class="text-gray-600 hover:text-primary transition-colors font-medium">Hồ sơ</a>
+            <span class="text-secondary font-semibold">📞 0938.021.111</span>
+          </div>
+          
+          <!-- Mobile Menu Button -->
+          <button class="md:hidden p-2 text-primary">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </nav>
+
+    <header class="relative bg-white rounded-b-3xl shadow-lg mb-8 overflow-hidden border-b border-gray-100">
+      <!-- Background Pattern -->
+      <div class="absolute inset-0 bg-gradient-to-r from-primary/3 to-secondary/3"></div>
+      <div class="absolute top-0 left-0 w-32 h-32 bg-secondary/8 rounded-full -translate-x-16 -translate-y-16"></div>
+      <div class="absolute bottom-0 right-0 w-40 h-40 bg-primary/8 rounded-full translate-x-20 translate-y-20"></div>
+      
+      <!-- Dragon Ornaments -->
+      <div class="absolute top-6 left-6 text-3xl text-secondary opacity-40">🐲</div>
+      <div class="absolute top-6 right-6 text-3xl text-secondary opacity-40">🐲</div>
+      
+      <div class="container mx-auto px-4 py-12 relative z-10">
+        <div class="text-center">
+          <!-- Logo và Brand Name -->
+          <div class="flex items-center justify-center gap-4 mb-6">
+            <div class="w-16 h-16 bg-gradient-to-br from-primary to-secondary rounded-full flex items-center justify-center shadow-lg">
+              <span class="text-2xl text-white font-bold">LG</span>
+            </div>
+            <div class="text-left">
+              <h1 class="text-3xl md:text-4xl lg:text-5xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent font-vietnamese">
+                LÊ GIA PHONG THỦY
+              </h1>
+              <p class="text-sm text-gray-600 font-medium">Thạc sĩ Tâm Lý Học - Chuyên gia Phong Thủy</p>
+            </div>
+          </div>
+          
+          <div class="text-4xl mb-6 animate-spin-slow">☯</div>
+          <p class="text-lg md:text-xl text-gray-700 max-w-4xl mx-auto mb-8 leading-relaxed font-vietnamese font-semibold">
+            MỆNH MÌNH LÀ DO MÌNH
+          </p>
+          
+          <!-- Five Elements with Tailwind -->
+          <div class="flex justify-center items-center gap-3 flex-wrap mb-4">
+            <span class="px-4 py-2 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-full text-sm font-medium shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer">🔥 Hỏa</span>
+            <span class="px-4 py-2 bg-gradient-to-r from-amber-600 to-orange-600 text-white rounded-full text-sm font-medium shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer">🏔️ Thổ</span>
+            <span class="px-4 py-2 bg-gradient-to-r from-slate-500 to-gray-600 text-white rounded-full text-sm font-medium shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer">⚡ Kim</span>
+            <span class="px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-full text-sm font-medium shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer">💧 Thủy</span>
+            <span class="px-4 py-2 bg-gradient-to-r from-emerald-600 to-green-600 text-white rounded-full text-sm font-medium shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer">🌿 Mộc</span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="container mx-auto px-4 space-y-8 max-w-7xl">
+      <!-- Section 1: Thông tin khách hàng & phong thủy -->
+      <section id="input-section" class="bg-white/95 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
+        <div class="bg-gradient-to-r from-primary/5 to-secondary/5 px-6 py-4 border-b border-gray-200">
+          <h2 class="text-2xl font-bold text-primary flex items-center gap-3">
+            <span class="bg-primary text-white w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold">1</span>
+            Thông tin khách hàng & phong thủy
+            <span class="text-2xl">👤</span>
+          </h2>
+        </div>
+
+        <div class="p-6 space-y-6">
+          <!-- Grid 2 columns -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="space-y-2">
+              <label for="kh-ten" class="block text-sm font-semibold text-gray-700">Họ tên khách hàng</label>
+              <input type="text" id="kh-ten" placeholder="VD: Nguyễn Văn A" 
+                class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-300 bg-white">
+            </div>
+
+            <div class="space-y-2">
+              <label for="kh-phone" class="block text-sm font-semibold text-gray-700">Số điện thoại</label>
+              <input type="tel" id="kh-phone" placeholder="VD: 09xxxxxxxx hoặc +84..." inputmode="tel"
+                class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-primary focus:ring-4 focus:ring-primary/20 transition-all duration-300 bg-white">
+            </div>
+
+            <div class="space-y-2">
+              <label for="ngay-sinh" class="block text-sm font-semibold text-gray-700">Ngày sinh</label>
+              <input type="text" id="ngay-sinh" placeholder="VD: YYYY-MM-DD hoặc DD/MM/YYYY"
+                class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-primary focus:ring-4 focus:ring-primary/20 transition-all duration-300 bg-white">
+            </div>
+
+            <div class="space-y-2">
+              <label for="gioi-tinh" class="block text-sm font-semibold text-gray-700">Giới tính</label>
+              <select id="gioi-tinh" class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-primary focus:ring-4 focus:ring-primary/20 transition-all duration-300 bg-white">
+                <option value="nam">Nam</option>
+                <option value="nu">Nữ</option>
+              </select>
+            </div>
+
+            <div class="space-y-2">
+              <label for="huong-nha" class="block text-sm font-semibold text-gray-700">Hướng nhà/đất</label>
+              <select id="huong-nha" class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-primary focus:ring-4 focus:ring-primary/20 transition-all duration-300 bg-white">
+                <option value="Bắc">Bắc</option>
+                <option value="Đông Bắc">Đông Bắc</option>
+                <option value="Đông">Đông</option>
+                <option value="Đông Nam">Đông Nam</option>
+                <option value="Nam">Nam</option>
+                <option value="Tây Nam">Tây Nam</option>
+                <option value="Tây">Tây</option>
+                <option value="Tây Bắc">Tây Bắc</option>
+              </select>
+            </div>
+
+            <div class="space-y-2">
+              <label for="nam-xay" class="block text-sm font-semibold text-gray-700">Năm xây/sửa (dương lịch)</label>
+              <input type="number" id="nam-xay" placeholder="2025" min="1900" max="2099"
+                class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-primary focus:ring-4 focus:ring-primary/20 transition-all duration-300 bg-white">
+            </div>
+
+            <div class="space-y-2">
+              <label for="thang-xay" class="block text-sm font-semibold text-gray-700">Tháng xây/sửa</label>
+              <select id="thang-xay" class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-primary focus:ring-4 focus:ring-primary/20 transition-all duration-300 bg-white">
+                <option value="1">1</option><option value="2">2</option><option value="3">3</option>
+                <option value="4">4</option><option value="5">5</option><option value="6">6</option>
+                <option value="7">7</option><option value="8">8</option><option value="9">9</option>
+                <option value="10">10</option><option value="11">11</option><option value="12">12</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Section 2: Thông tin bất động sản -->
+          <div class="bg-gradient-to-r from-feng-shui-blue/5 to-feng-shui-green/5 rounded-xl p-6 border border-feng-shui-blue/20">
+            <h3 class="text-xl font-bold text-feng-shui-blue flex items-center gap-3 mb-6">
+              <span class="bg-feng-shui-blue text-white w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold">2</span>
+              Thông tin bất động sản (phường/xã mới)
+              <span class="text-2xl">🏘️</span>
+            </h3>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+              <div class="space-y-2">
+                <label for="bd-province" class="block text-sm font-semibold text-gray-700">Tỉnh</label>
+                <select id="bd-province" class="w-full px-4 py-3 border-2 border-feng-shui-blue/30 rounded-lg focus:border-feng-shui-blue focus:ring-4 focus:ring-feng-shui-blue/20 transition-all duration-300 bg-white">
+                  <option value="Đồng Nai" selected>Đồng Nai</option>
+                  <option value="Bình Phước">Bình Phước</option>
+                </select>
+              </div>
+
+              <div class="space-y-2">
+                <label for="bd-ward" class="block text-sm font-semibold text-gray-700">Phường/Xã (mới)</label>
+                <select id="bd-ward" class="w-full px-4 py-3 border-2 border-feng-shui-blue/30 rounded-lg focus:border-feng-shui-blue focus:ring-4 focus:ring-feng-shui-blue/20 transition-all duration-300 bg-white"></select>
+                <div id="ward-custom-wrap" class="hidden mt-3 space-y-2">
+                  <input type="text" id="bd-ward-custom" placeholder="Nhập tên phường/xã (khi chọn 'Khác')" 
+                    class="w-full px-4 py-3 border-2 border-feng-shui-blue/30 rounded-lg focus:border-feng-shui-blue focus:ring-4 focus:ring-feng-shui-blue/20 transition-all duration-300 bg-white">
+                  <button id="btn-save-ward" class="px-4 py-2 bg-feng-shui-blue text-white rounded-lg hover:bg-feng-shui-blue/80 transition-colors" type="button">Lưu phường vào danh sách</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+              <div class="space-y-2">
+                <label for="bd-to" class="block text-sm font-semibold text-gray-700">Tờ</label>
+                <input id="bd-to" type="text" placeholder="VD: 30"
+                  class="w-full px-4 py-3 border-2 border-feng-shui-blue/30 rounded-lg focus:border-feng-shui-blue focus:ring-4 focus:ring-feng-shui-blue/20 transition-all duration-300 bg-white">
+              </div>
+
+              <div class="space-y-2">
+                <label for="bd-thua" class="block text-sm font-semibold text-gray-700">Thửa</label>
+                <input id="bd-thua" type="text" placeholder="VD: 45"
+                  class="w-full px-4 py-3 border-2 border-feng-shui-blue/30 rounded-lg focus:border-feng-shui-blue focus:ring-4 focus:ring-feng-shui-blue/20 transition-all duration-300 bg-white">
+              </div>
+
+              <div class="space-y-2">
+                <label for="bd-price" class="block text-sm font-semibold text-gray-700">Giá tiền (VNĐ)</label>
+                <input id="bd-price" type="number" placeholder="Ví dụ: 2500000000"
+                  class="w-full px-4 py-3 border-2 border-feng-shui-blue/30 rounded-lg focus:border-feng-shui-blue focus:ring-4 focus:ring-feng-shui-blue/20 transition-all duration-300 bg-white">
+              </div>
+            </div>
+
+            <div class="space-y-4">
+              <div class="space-y-2">
+                <label for="bd-address-detail" class="block text-sm font-semibold text-gray-700">Địa chỉ chi tiết (đường/số nhà/tổ...)</label>
+                <input id="bd-address-detail" type="text" placeholder="VD: 123 Lê Duẩn, Tổ 5"
+                  class="w-full px-4 py-3 border-2 border-feng-shui-blue/30 rounded-lg focus:border-feng-shui-blue focus:ring-4 focus:ring-feng-shui-blue/20 transition-all duration-300 bg-white">
+              </div>
+
+              <div class="space-y-2">
+                <label for="bd-note" class="block text-sm font-semibold text-gray-700">Ghi chú BĐS</label>
+                <textarea id="bd-note" placeholder="Diện tích, pháp lý, tình trạng..." rows="3"
+                  class="w-full px-4 py-3 border-2 border-feng-shui-blue/30 rounded-lg focus:border-feng-shui-blue focus:ring-4 focus:ring-feng-shui-blue/20 transition-all duration-300 bg-white resize-none"></textarea>
+              </div>
+
+              <div class="bg-gray-50 rounded-lg p-4 border-l-4 border-feng-shui-blue">
+                <strong class="text-feng-shui-blue">Địa chỉ đầy đủ sẽ lưu:</strong>
+                <div id="bd-full-address" class="text-gray-600 mt-1">—</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Môi trường & lỗi phong thủy -->
+          <div class="bg-gradient-to-r from-feng-shui-green/5 to-feng-shui-orange/5 rounded-xl p-6 border border-feng-shui-green/20">
+            <h3 class="text-xl font-bold text-feng-shui-green flex items-center gap-3 mb-6">
+              <span class="text-2xl">🌿</span>
+              Môi trường & lỗi phong thủy
+              <span class="text-sm bg-feng-shui-green/10 px-3 py-1 rounded-full">50+ mục</span>
+            </h3>
+            
+            <div class="mb-4">
+              <input id="issues-search" type="text" placeholder="Tìm theo từ khóa..." 
+                class="w-full px-4 py-3 border-2 border-feng-shui-green/30 rounded-lg focus:border-feng-shui-green focus:ring-4 focus:ring-feng-shui-green/20 transition-all duration-300 bg-white">
+            </div>
+            
+            <!-- Phần hiển thị được chọn -->
+            <div id="selected-issues" class="mb-4 hidden">
+              <h4 class="text-sm font-semibold text-gray-700 mb-2">Đã chọn:</h4>
+              <div id="selected-issues-list" class="flex flex-wrap gap-2"></div>
+            </div>
+            
+            <!-- Toggle button để mở/đóng danh sách -->
+            <div class="mb-4">
+              <button id="toggle-issues-list" class="bg-feng-shui-green/10 hover:bg-feng-shui-green/20 text-feng-shui-green px-4 py-2 rounded-lg transition-colors border border-feng-shui-green/30">
+                📋 Chọn vấn đề môi trường & phong thủy
+              </button>
+            </div>
+            
+            <!-- Danh sách chi tiết (ẩn ban đầu) -->
+            <div id="issues-detail" class="hidden">
+              <div id="issues-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section 3: La bàn Bát Trạch -->
+      <section id="compass-section" class="bg-white backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
+        <div class="bg-gradient-to-r from-primary/5 to-secondary/5 px-6 py-4 border-b border-gray-200">
+          <h2 class="text-2xl font-bold text-primary flex items-center gap-3">
+            <span class="bg-primary text-white w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold">3</span>
+            La bàn Bát Trạch
+            <span class="text-2xl">🧭</span>
+          </h2>
+        </div>
+
+        <!-- La bàn container với Tailwind -->
+        <div class="p-4 md:p-6">
+          <div class="bg-gradient-to-br from-feng-shui-gold/5 via-white to-feng-shui-red/5 rounded-xl p-4 md:p-6 lg:p-8">
+            <!-- Grid layout để cân đối la bàn và bảng thông tin -->
+            <div class="grid grid-cols-1 xl:grid-cols-3 gap-6 lg:gap-8">
+              
+              <!-- La bàn chính - chiếm 2/3 space trên màn hình lớn -->
+              <div class="xl:col-span-2 flex items-center justify-center">
+                <div class="w-full max-w-[600px] h-[600px] flex items-center justify-center">
+                  <!-- D3.js Enhanced Compass Container -->
+                  <div id="d3-compass-container" class="flex justify-center items-center w-full h-full">
+                    <!-- D3.js compass will be rendered here -->
+                  </div>
+                </div>
+              </div>
+              <!-- Compass info với Tailwind styling - chiếm 1/3 space -->
+              <div class="xl:col-span-1 flex flex-col">
+                <div class="compass-info bg-white/90 backdrop-blur-sm rounded-xl p-6 border border-gray-200 shadow-lg">
+                  <!-- Thông tin la bàn hiện tại -->
+                  <div class="space-y-3 mb-6">
+                    <div class="flex justify-between items-center py-2 border-b border-gray-200">
+                      <strong class="text-primary">Hướng hiện tại:</strong> 
+                      <span id="compass-dir" class="text-gray-700 font-medium">Bắc</span>
+                    </div>
+                    <div class="flex justify-between items-center py-2 border-b border-gray-200">
+                      <strong class="text-primary">Góc:</strong> 
+                      <span id="compass-deg" class="text-gray-700 font-medium">0</span>°
+                    </div>
+                    <div class="flex justify-between items-center py-2 border-b border-gray-200">
+                      <strong class="text-primary">Cung mệnh:</strong> 
+                      <span id="compass-trigram" class="text-gray-700 font-medium">KHẢM ☵</span>
+                    </div>
+                    <div class="flex justify-between items-center py-2 border-b border-gray-200">
+                      <strong class="text-primary">Nguyên tố:</strong> 
+                      <span id="compass-element" class="text-gray-700 font-medium">Thủy</span>
+                    </div>
+                    <div class="flex justify-between items-center py-2">
+                      <strong class="text-primary">Ý nghĩa:</strong> 
+                      <span id="compass-meaning" class="text-gray-700 font-medium">Nghiệp</span>
+                    </div>
+                  </div>
+                  
+                  <!-- Thông tin sector được chọn -->
+                  <div class="mt-4 p-4 bg-gray-50 rounded-lg">
+                    <div id="compass-sector-info" class="text-sm text-gray-600">
+                      Click vào một cung để xem thông tin chi tiết
+                    </div>
+                  </div>
+                  
+                  <div class="bg-primary/5 rounded-lg p-4 mb-6 flex items-center gap-3">
+                    <label for="compass-offset" class="text-primary font-semibold">Bù lệch (°):</label>
+                    <input type="number" id="compass-offset" value="0" step="1" 
+                      class="w-20 px-3 py-2 border-2 border-gray-300 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all">
+                  </div>
+                  
+                  <div class="grid grid-cols-1 gap-3 mb-6">
+                    <button id="btn-compass-start" class="w-full px-4 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-300 font-medium">
+                      Bắt đầu la bàn
+                    </button>
+                    <button id="btn-compass-stop" class="w-full px-4 py-3 bg-gradient-to-r from-gray-500 to-gray-600 text-white rounded-lg hover:from-gray-600 hover:to-gray-700 transition-all duration-300 font-medium">
+                      Dừng
+                    </button>
+                    <button id="btn-compass-apply" class="w-full px-4 py-3 bg-gradient-to-r from-feng-shui-gold to-feng-shui-orange text-white rounded-lg hover:from-feng-shui-orange hover:to-feng-shui-gold transition-all duration-300 font-medium">
+                      Lấy hướng nhà từ la bàn
+                    </button>
+                  </div>
+                  
+                  <div id="compass-status" class="text-center text-gray-500 text-sm italic bg-gray-50 rounded-lg p-3">La bàn chưa khởi động</div>
+                  
+                  <!-- Thông tin chi tiết về Bát Quái với Tailwind -->
+                  <div class="mt-6 bg-gradient-to-r from-feng-shui-gold/5 to-feng-shui-red/5 rounded-xl p-4 border border-gray-200">
+                    <h4 class="text-lg font-bold text-primary text-center mb-4 border-b-2 border-feng-shui-gold pb-2">
+                      Bát Quái - Tám Cung Mệnh:
+                    </h4>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <div class="flex items-center gap-3 p-2 bg-white/50 rounded-lg hover:bg-white transition-colors">
+                        <span class="text-xl">☵</span>
+                        <span class="text-xs text-gray-700">Khảm (Bắc) - Thủy - Nghiệp</span>
+                      </div>
+                      <div class="flex items-center gap-3 p-2 bg-white/50 rounded-lg hover:bg-white transition-colors">
+                        <span class="text-xl">☶</span>
+                        <span class="text-xs text-gray-700">Cấn (ĐB) - Thổ - Tri thức</span>
+                      </div>
+                      <div class="flex items-center gap-3 p-2 bg-white/50 rounded-lg hover:bg-white transition-colors">
+                        <span class="text-xl">☳</span>
+                        <span class="text-xs text-gray-700">Chấn (Đông) - Mộc - Gia đình</span>
+                      </div>
+                      <div class="flex items-center gap-3 p-2 bg-white/50 rounded-lg hover:bg-white transition-colors">
+                        <span class="text-xl">☴</span>
+                        <span class="text-xs text-gray-700">Tốn (ĐN) - Mộc - Tài lộc</span>
+                      </div>
+                      <div class="flex items-center gap-3 p-2 bg-white/50 rounded-lg hover:bg-white transition-colors">
+                        <span class="text-xl">☲</span>
+                        <span class="text-xs text-gray-700">Ly (Nam) - Hỏa - Danh tiếng</span>
+                      </div>
+                      <div class="flex items-center gap-3 p-2 bg-white/50 rounded-lg hover:bg-white transition-colors">
+                        <span class="text-xl">☷</span>
+                        <span class="text-xs text-gray-700">Khôn (TN) - Thổ - Tình duyên</span>
+                      </div>
+                      <div class="flex items-center gap-3 p-2 bg-white/50 rounded-lg hover:bg-white transition-colors">
+                        <span class="text-xl">☱</span>
+                        <span class="text-xs text-gray-700">Đoài (Tây) - Kim - Con cái</span>
+                      </div>
+                      <div class="flex items-center gap-3 p-2 bg-white/50 rounded-lg hover:bg-white transition-colors">
+                        <span class="text-xl">☰</span>
+                        <span class="text-xs text-gray-700">Càn (TB) - Kim - Quý nhân</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 4: Numerology -->
+
+      <!-- Section 4: Numerology -->
+        <div class="px-6 pb-6">
+          <div class="flex flex-wrap gap-4 justify-center">
+            <button id="btn-analyze" class="px-8 py-3 bg-gradient-to-r from-primary to-primary/80 text-white rounded-lg hover:from-primary/80 hover:to-primary/60 transition-all duration-300 font-semibold shadow-lg hover:shadow-xl flex items-center gap-2">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+              </svg>
+              Phân tích phong thủy
+            </button>
+            <button id="btn-numerology" class="px-8 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-300 font-semibold shadow-lg hover:shadow-xl flex items-center gap-2">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"></path>
+              </svg>
+              Phân tích thần số học
+            </button>
+            
+            <!-- Nút AI Analysis mới -->
+            <button id="btn-ai-analysis" class="px-8 py-3 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-lg hover:from-purple-700 hover:to-purple-800 transition-all duration-300 font-semibold shadow-lg hover:shadow-xl flex items-center gap-2">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+              </svg>
+              🤖 Phân tích AI
+            </button>
+            
+            <!-- Nút Test AI Compliance (Dev only) - HIDDEN -->
+            <button id="btn-test-ai" onclick="testAICompliance()" class="px-6 py-2 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg hover:from-red-600 hover:to-red-700 transition-all duration-300 text-sm font-medium shadow-md hover:shadow-lg flex items-center gap-2" style="display:none;">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+              🧪 Test AI
+            </button>
+            
+            <!-- Nút Debug Data Collection - HIDDEN -->
+            <button id="btn-debug-data" onclick="debugDataCollection()" class="px-6 py-2 bg-gradient-to-r from-gray-500 to-gray-600 text-white rounded-lg hover:from-gray-600 hover:to-gray-700 transition-all duration-300 text-sm font-medium shadow-md hover:shadow-lg flex items-center gap-2" style="display:none;">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h3.586l-5.293-5.293a1 1 0 011.414-1.414L14 10.586V7a1 1 0 112 0v6a1 1 0 01-1 1H9a1 1 0 110-2z"></path>
+              </svg>
+              🔍 Debug Data
+            </button>
+
+            <button id="btn-save" class="px-8 py-3 bg-gradient-to-r from-accent to-accent/80 text-white rounded-lg hover:from-accent/80 hover:to-accent/60 transition-all duration-300 font-semibold shadow-lg hover:shadow-xl flex items-center gap-2">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path>
+              </svg>
+              Lưu hồ sơ
+            </button>
+            <button id="btn-export" class="px-8 py-3 bg-gradient-to-r from-orange-600 to-orange-700 text-white rounded-lg hover:from-orange-700 hover:to-orange-600 transition-all duration-300 font-semibold shadow-lg hover:shadow-xl flex items-center gap-2">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+              </svg>
+              Xuất CSV
+            </button>
+          </div>
+          
+          <!-- Floating PDF Export Button -->
+          <button id="btn-export-pdf" class="fixed bottom-6 right-6 w-14 h-14 bg-gradient-to-r from-yellow-500 to-orange-500 text-white rounded-full shadow-2xl hover:shadow-3xl hover:scale-110 transition-all duration-300 z-40 flex items-center justify-center">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+            </svg>
+          </button>
+        </div>
+      </section>
+
+      <section id="numerology-section" class="card traditional-card" style="display:none;">
+        <div class="bg-gradient-to-br from-blue-50 to-indigo-100 rounded-xl border border-blue-200 shadow-lg p-6">
+          <h2 class="text-2xl font-bold text-blue-800 mb-6 flex items-center gap-3">
+            <span class="flex items-center justify-center w-8 h-8 bg-blue-600 text-white rounded-full text-sm font-bold">4</span>
+            <span>Phân tích thần số học</span>
+            <span class="text-2xl">🔢</span>
+          </h2>
+        <div id="numerology-content">
+          <div class="numerology-grid">
+            <div class="number-card">
+              <h3>Số chủ đạo (Life Path)</h3>
+              <div class="number-display" id="life-path-number"></div>
+              <div id="life-path-result"></div>
+            </div>
+            <div class="number-card">
+              <h3>Số biểu hiện (Expression)</h3>
+              <div class="number-display" id="expression-number"></div>
+              <div id="expression-result"></div>
+            </div>
+            <div class="number-card">
+              <h3>Số tâm hồn (Soul)</h3>
+              <div class="number-display" id="soul-number"></div>
+              <div id="soul-result"></div>
+            </div>
+            <div class="number-card">
+              <h3>Số nhân cách (Personality)</h3>
+              <div class="number-display" id="personality-number"></div>
+              <div id="personality-result"></div>
+            </div>
+            <div class="number-card">
+              <h3>Năm cá nhân 2025</h3>
+              <div class="number-display" id="personal-year-number"></div>
+              <div id="personal-year-result"></div>
+            </div>
+            <div class="number-card">
+              <h3>Số điện thoại</h3>
+              <div class="number-display" id="phone-number"></div>
+              <div id="phone-result"></div>
+            </div>
+            <div class="number-card">
+              <h3>Tương thích tình yêu</h3>
+              <div class="compatibility-input">
+                <label for="partner-name">Tên bạn đời:</label>
+                <input type="text" id="partner-name" placeholder="Nhập tên đầy đủ">
+                <label for="partner-birth">Ngày sinh:</label>
+                <input type="text" id="partner-birth" placeholder="DD/MM/YYYY">
+                <button id="btn-compatibility" class="secondary">Kiểm tra tương thích</button>
+              </div>
+              <div id="compatibility-result"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Phần đề xuất số điện thoại -->
+        <div class="card phone-suggestions traditional-card" style="margin-top: 20px;">
+          <h3 class="subsection-title">
+            <span class="feng-shui-icon">�</span> Đề xuất số điện thoại phù hợp
+          </h3>
+          <div class="grid-2">
+            <div class="form-group">
+              <label for="suggest-name">Họ tên (để tính tương thích):</label>
+              <input type="text" id="suggest-name" placeholder="Tên đầy đủ">
+            </div>
+            <div class="form-group">
+              <label for="suggest-birth">Ngày sinh:</label>
+              <input type="text" id="suggest-birth" placeholder="DD/MM/YYYY">
+            </div>
+          </div>
+          <div class="grid-3">
+            <div class="form-group">
+              <label for="suggest-prefix">Đầu số mong muốn:</label>
+              <select id="suggest-prefix">
+                <option value="">Tất cả</option>
+                <option value="096">096 (Vinaphone)</option>
+                <option value="097">097 (Vinaphone)</option>
+                <option value="098">098 (Vinaphone)</option>
+                <option value="032">032 (Vinaphone)</option>
+                <option value="033">033 (Vinaphone)</option>
+                <option value="034">034 (Vinaphone)</option>
+                <option value="035">035 (Vinaphone)</option>
+                <option value="036">036 (Vinaphone)</option>
+                <option value="037">037 (Vinaphone)</option>
+                <option value="038">038 (Vinaphone)</option>
+                <option value="039">039 (Vinaphone)</option>
+                <option value="090">090 (Mobifone)</option>
+                <option value="093">093 (Mobifone)</option>
+                <option value="070">070 (Mobifone)</option>
+                <option value="079">079 (Mobifone)</option>
+                <option value="077">077 (Mobifone)</option>
+                <option value="076">076 (Mobifone)</option>
+                <option value="078">078 (Mobifone)</option>
+                <option value="091">091 (Viettel)</option>
+                <option value="094">094 (Viettel)</option>
+                <option value="083">083 (Viettel)</option>
+                <option value="084">084 (Viettel)</option>
+                <option value="085">085 (Viettel)</option>
+                <option value="081">081 (Viettel)</option>
+                <option value="082">082 (Viettel)</option>
+                <option value="086">086 (Viettel)</option>
+                <option value="088">088 (Viettel)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="suggest-lucky">Số may mắn yêu thích:</label>
+              <input type="text" id="suggest-lucky" placeholder="VD: 8, 6, 9" maxlength="10">
+            </div>
+            <div class="form-group">
+              <label for="suggest-avoid">Số tránh:</label>
+              <input type="text" id="suggest-avoid" placeholder="VD: 4, 7" maxlength="10">
+            </div>
+          </div>
+          <div class="actions">
+            <button id="btn-suggest-phones" class="btn-primary">Đề xuất số điện thoại</button>
+            <button id="btn-clear-suggestions" class="secondary">Xóa kết quả</button>
+          </div>
+          <div id="phone-suggestions-result" class="suggestions-result"></div>
+        </div>
+        </div>
+      </section>
+
+      <section id="result-section" class="card traditional-card">
+        <div class="bg-gradient-to-br from-green-50 to-emerald-100 rounded-xl border border-green-200 shadow-lg p-6">
+          <h2 class="text-2xl font-bold text-green-800 mb-6 flex items-center gap-3">
+            <span class="flex items-center justify-center w-8 h-8 bg-green-600 text-white rounded-full text-sm font-bold">5</span>
+            <span>Kết quả phân tích phong thủy</span>
+            <span class="text-2xl">🎯</span>
+          </h2>
+          <div id="result-content" class="bg-white rounded-lg border border-green-200 p-6 min-h-[200px]">
+            <p class="text-gray-500 text-center italic">Nhập đủ thông tin và nhấn "Phân tích phong thủy".</p>
+          </div>
+        </div>
+      </section>
+
+      <section id="profiles-section" class="card traditional-card">
+        <div class="bg-gradient-to-br from-purple-50 to-indigo-100 rounded-xl border border-purple-200 shadow-lg p-6">
+          <h2 class="text-2xl font-bold text-purple-800 mb-6 flex items-center gap-3">
+            <span class="flex items-center justify-center w-8 h-8 bg-purple-600 text-white rounded-full text-sm font-bold">6</span>
+            <span>Danh sách hồ sơ</span>
+            <span class="text-2xl">📋</span>
+          </h2>
+          
+          <div class="flex flex-col sm:flex-row gap-4 mb-6">
+            <input id="profiles-search" 
+                   type="text" 
+                   placeholder="Tìm theo tên hoặc SĐT..."
+                   class="flex-1 px-4 py-3 border-2 border-purple-200 rounded-lg bg-white focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all duration-200">
+            <span class="text-sm text-gray-500 self-center whitespace-nowrap">💾 Dữ liệu lưu cục bộ (LocalStorage)</span>
+          </div>
+          
+          <div class="bg-white rounded-lg border border-purple-200 shadow-sm overflow-hidden">
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead class="bg-purple-100 border-b border-purple-200">
+                  <tr>
+                    <th class="px-4 py-3 text-left font-semibold text-purple-800">Họ tên</th>
+                    <th class="px-4 py-3 text-left font-semibold text-purple-800">SĐT</th>
+                    <th class="px-4 py-3 text-left font-semibold text-purple-800">Cung mệnh</th>
+                    <th class="px-4 py-3 text-left font-semibold text-purple-800">Hướng nhà</th>
+                    <th class="px-4 py-3 text-left font-semibold text-purple-800">Địa chỉ BĐS</th>
+                    <th class="px-4 py-3 text-left font-semibold text-purple-800">Tờ/Thửa</th>
+                    <th class="px-4 py-3 text-left font-semibold text-purple-800">Giá</th>
+                    <th class="px-4 py-3 text-left font-semibold text-purple-800">Lỗi MT</th>
+                    <th class="px-4 py-3 text-left font-semibold text-purple-800">Ngày lưu</th>
+                    <th class="px-4 py-3 text-left font-semibold text-purple-800">Thao tác</th>
+                  </tr>
+                </thead>
+                <tbody id="profiles-tbody" class="divide-y divide-gray-200">
+                  <!-- Data will be populated by JavaScript -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- AI Chat Assistant Section - Moved to bottom -->
+    <section id="ai-result-section" class="card traditional-card mt-8 container mx-auto px-4" style="display:none;">
+      <div class="bg-gradient-to-br from-purple-50 to-violet-100 rounded-xl border border-purple-200 shadow-lg p-6">
+        <h2 class="text-2xl font-bold text-purple-800 mb-6 flex items-center gap-3">
+          <span class="flex items-center justify-center w-8 h-8 bg-purple-600 text-white rounded-full text-sm font-bold">💬</span>
+          <span>AI Chat Assistant</span>
+          <span class="text-2xl">🤖</span>
+        </h2>
+        
+        <!-- AI Chat Content -->
+        <div id="ai-result-content" class="bg-white rounded-lg border border-purple-200 p-6 min-h-[200px]">
+          <div class="flex items-center justify-center text-gray-500 italic">
+            <svg class="w-8 h-8 mr-3 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-3.582 8-8 8a8.955 8.955 0 01-1.946-.274A6 6 0 015.667 11H3a1 1 0 01-1-1V7a1 1 0 011-1h2.667A8 8 0 0121 12z"></path>
+            </svg>
+            Nhấn "💬 Chat với AI" để bắt đầu trò chuyện...
+          </div>
+        </div>
+        
+        <!-- Quick Questions -->
+        <div class="mt-6 flex flex-wrap gap-3">
+          <button onclick="sendQuickQuestion('Hãy giải thích ý nghĩa phong thủy của số nhà này')" 
+                  class="px-4 py-2 bg-purple-100 hover:bg-purple-200 text-purple-700 rounded-lg text-sm transition-colors duration-200">
+            💡 Giải thích phong thủy số nhà
+          </button>
+          <button onclick="sendQuickQuestion('Tôi có nên chọn số điện thoại này không?')" 
+                  class="px-4 py-2 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg text-sm transition-colors duration-200">
+            📱 Tư vấn số điện thoại
+          </button>
+          <button onclick="sendQuickQuestion('Số tử vi này có ý nghĩa gì?')" 
+                  class="px-4 py-2 bg-green-100 hover:bg-green-200 text-green-700 rounded-lg text-sm transition-colors duration-200">
+            🔮 Giải thích tử vi
+          </button>
+        </div>
+        
+        <!-- Chat Input -->
+        <div class="mt-6 flex gap-3">
+          <input type="text" 
+                 id="chat-input" 
+                 placeholder="Nhập câu hỏi của bạn..." 
+                 class="flex-1 px-4 py-3 border border-purple-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                 onkeypress="handleChatKeyPress(event)">
+          <button onclick="sendChatMessage()" 
+                  class="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors duration-200 flex items-center gap-2">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+            </svg>
+            Gửi
+          </button>
+        </div>
+        
+        <!-- AI Settings Panel -->
+        <div class="mt-6 bg-purple-50 rounded-lg p-4 border border-purple-200">
+          <h3 class="font-semibold text-purple-800 mb-3 flex items-center gap-2">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.5 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+            </svg>
+            Cài đặt AI Chat
+          </h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Trạng thái API:</label>
+              <div id="ai-status" class="px-3 py-2 bg-gray-100 rounded-md text-sm flex items-center gap-2">
+                <div class="w-2 h-2 bg-gray-400 rounded-full"></div>
+                <span>Chưa kiểm tra</span>
+              </div>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">AI Model:</label>
+              <div class="px-3 py-2 bg-green-100 rounded-md text-sm flex items-center gap-2">
+                <div class="w-2 h-2 bg-green-400 rounded-full"></div>
+                <span>Groq Llama 3 70B</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer với Tailwind -->
+    <footer class="mt-16 bg-gradient-to-r from-gray-50 via-white to-gray-50 border-t border-gray-200">
+      <div class="container mx-auto px-4 py-8 text-center">
+        <div class="flex justify-center items-center gap-4 mb-4">
+          <span class="text-2xl animate-pulse">🐲</span>
+          <span class="text-lg font-semibold text-primary">Cát Tường Như Ý</span>
+          <span class="text-2xl animate-pulse">🐲</span>
+        </div>
+        <p class="text-gray-600 mb-4">Thạc sĩ Tâm Lý Học - Chuyên gia Phong Thủy LÊ BẢO TRUNG - 0938021111</p>
+        <div class="flex justify-center items-center gap-3 flex-wrap">
+          <span class="px-3 py-1 bg-gradient-to-r from-gray-400 to-gray-600 text-white rounded-full text-xs">Kim</span>
+          <span class="px-3 py-1 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-full text-xs">Mộc</span>
+          <span class="px-3 py-1 bg-gradient-to-r from-blue-500 to-blue-700 text-white rounded-full text-xs">Thủy</span>
+          <span class="px-3 py-1 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-full text-xs">Hỏa</span>
+          <span class="px-3 py-1 bg-gradient-to-r from-yellow-500 to-orange-500 text-white rounded-full text-xs">Thổ</span>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <script src="numerology.js"></script>
+  <script src="script.js"></script>
+  <script src="phone-numerology.js"></script>
+  <script src="compass-enhanced.js"></script>
+  <script src="compass.js"></script>
+  <script src="svg-compass.js"></script>
+  <script src="pdf-export.js"></script>
+  <script src="loading.js"></script>
+  
+  <!-- Perfect Compass SVG JavaScript -->
+  <script>
+    // Compass functionality for the new SVG design
+    let compassRotation = 0;
+    const compassSectorInfo = {
+      'KHẢM': { element: 'Thủy', meaning: 'Nghề nghiệp, sự nghiệp phát triển', direction: 'Bắc', degrees: '337.5° - 22.5°' },
+      'CẤN': { element: 'Thổ', meaning: 'Tri thức, học hành, tu dưỡng', direction: 'Đông Bắc', degrees: '22.5° - 67.5°' },
+      'CHẤN': { element: 'Mộc', meaning: 'Gia đình, anh em, con cháu', direction: 'Đông', degrees: '67.5° - 112.5°' },
+      'TỐN': { element: 'Mộc', meaning: 'Tài lộc, tiền bạc, của cải', direction: 'Đông Nam', degrees: '112.5° - 157.5°' },
+      'LY': { element: 'Hỏa', meaning: 'Danh tiếng, thanh danh, địa vị', direction: 'Nam', degrees: '157.5° - 202.5°' },
+      'KHÔN': { element: 'Thổ', meaning: 'Tình duyên, vợ chồng, mẹ già', direction: 'Tây Nam', degrees: '202.5° - 247.5°' },
+      'ĐOÀI': { element: 'Kim', meaning: 'Con cái, em út, vui vẻ', direction: 'Tây', degrees: '247.5° - 292.5°' },
+      'CÀN': { element: 'Kim', meaning: 'Quý nhân, cha già, lãnh đạo', direction: 'Tây Bắc', degrees: '292.5° - 337.5°' }
+    };
+
+    function rotateCompassNeedle(degrees) {
+      compassRotation += degrees;
+      const needle = document.getElementById('compass-needle');
+      if (needle) {
+        needle.style.transform = `rotate(${compassRotation}deg)`;
+      }
+    }
+
+    function resetCompassNeedle() {
+      compassRotation = 0;
+      const needle = document.getElementById('compass-needle');
+      if (needle) {
+        needle.style.transform = 'rotate(0deg)';
+      }
+    }
+
+    // Initialize compass sector click events
+    document.addEventListener('DOMContentLoaded', function() {
+      document.querySelectorAll('.compass-sector').forEach(sector => {
+        sector.addEventListener('click', function() {
+          const sectorName = this.getAttribute('data-sector');
+          const info = compassSectorInfo[sectorName];
+          
+          if (info) {
+            // Update compass info display
+            document.getElementById('compass-dir').textContent = info.direction;
+            document.getElementById('compass-trigram').textContent = `${sectorName} ${getSectorTrigram(sectorName)}`;
+            document.getElementById('compass-element').textContent = info.element;
+            document.getElementById('compass-meaning').textContent = info.meaning;
+            
+            // Update sector info
+            const infoDiv = document.getElementById('compass-sector-info');
+            if (infoDiv) {
+              infoDiv.innerHTML = `
+                <strong>${sectorName}</strong><br>
+                <strong>Hướng:</strong> ${info.direction} (${info.degrees})<br>
+                <strong>Ngũ hành:</strong> ${info.element}<br>
+                <strong>Ý nghĩa:</strong> ${info.meaning}
+              `;
+            }
+            
+            // Update main destiny display
+            const mainDestiny = document.getElementById('main-destiny');
+            if (mainDestiny) {
+              mainDestiny.textContent = sectorName;
+            }
+          }
+          
+          // Highlight selected sector
+          document.querySelectorAll('.compass-sector').forEach(s => {
+            s.style.filter = 'brightness(1)';
+          });
+          this.style.filter = 'brightness(1.3)';
+        });
+
+        // Add hover effects
+        sector.addEventListener('mouseenter', function() {
+          this.style.transform = 'scale(1.02)';
+          this.style.transformOrigin = '200px 200px';
+        });
+
+        sector.addEventListener('mouseleave', function() {
+          this.style.transform = 'scale(1)';
+        });
+      });
+    });
+
+    function getSectorTrigram(sectorName) {
+      const trigrams = {
+        'KHẢM': '☵',
+        'CẤN': '☶', 
+        'CHẤN': '☳',
+        'TỐN': '☴',
+        'LY': '☲',
+        'KHÔN': '☷',
+        'ĐOÀI': '☱',
+        'CÀN': '☰'
+      };
+      return trigrams[sectorName] || '';
+    }
+  </script>
+
+  <!-- PDF Export script -->
+  <script src="pdf-export.js"></script>
+
+  <!-- Groq AI Services -->
+  <script src="config.js"></script>
+  <script src="groq-service.js"></script>
+  <script src="groq-debug.js"></script>
+  <script src="ai-integration.js"></script>
+
+  <!-- Export PDF button -->
+  <button id="btn-export-pdf" onclick="exportToPDF()"
+    class="fixed bottom-6 right-6 px-6 py-3 bg-primary hover:bg-primary/80 text-white rounded-full text-sm font-semibold shadow-lg hover:scale-110 hover:shadow-xl transition-all duration-300 cursor-pointer flex items-center gap-2 z-50">
+    <span>📄</span> Xuất PDF
+  </button>
+
+</body>
+</html>

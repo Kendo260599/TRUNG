@@ -1,0 +1,112 @@
+// Enhanced Compass Initialization & Styling
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🧭 Initializing Enhanced Compass...');
+    
+    // Wait for all elements to be ready
+    setTimeout(() => {
+        const compass = document.querySelector('.bat-trach-compass');
+        const compassWrap = document.querySelector('.compass-wrap');
+        const sectors = document.querySelectorAll('.bagua-sector');
+        
+        if (compass) {
+            console.log('✅ Compass found and styled');
+        }
+        
+        if (sectors.length > 0) {
+            console.log(`✅ Found ${sectors.length} Bagua sectors`);
+            
+            // Add enhanced interactions
+            sectors.forEach((sector, index) => {
+                sector.addEventListener('click', function() {
+                    // Remove previous selections
+                    sectors.forEach(s => s.classList.remove('selected'));
+                    
+                    // Add selection to clicked sector
+                    this.classList.add('selected');
+                    
+                    // Get sector info
+                    const trigramName = this.querySelector('.trigram-name')?.textContent || '';
+                    const element = this.querySelector('.trigram-element')?.textContent || '';
+                    const meaning = this.querySelector('.trigram-meaning')?.textContent || '';
+                    
+                    console.log(`🎯 Selected sector: ${trigramName} - ${element} - ${meaning}`);
+                    
+                    // Update compass info if available
+                    updateCompassInfo(trigramName, element, meaning);
+                });
+                
+                // Add hover effects
+                sector.addEventListener('mouseenter', function() {
+                    this.style.transform = 'scale(1.15) translateZ(0)';
+                });
+                
+                sector.addEventListener('mouseleave', function() {
+                    if (!this.classList.contains('selected')) {
+                        this.style.transform = '';
+                    }
+                });
+            });
+        }
+        
+        // Initialize compass controls if they exist
+        initializeCompassControls();
+        
+    }, 500);
+});
+
+function updateCompassInfo(trigram, element, meaning) {
+    const compassTrigram = document.getElementById('compass-trigram');
+    const compassElement = document.getElementById('compass-element');
+    const compassMeaning = document.getElementById('compass-meaning');
+    
+    if (compassTrigram) compassTrigram.textContent = trigram;
+    if (compassElement) compassElement.textContent = element;
+    if (compassMeaning) compassMeaning.textContent = meaning;
+}
+
+function initializeCompassControls() {
+    // Auto compass button
+    const autoBtn = document.getElementById('auto-compass');
+    if (autoBtn) {
+        autoBtn.addEventListener('click', function() {
+            console.log('🔄 Auto compass mode toggled');
+        });
+    }
+    
+    // Manual compass button
+    const manualBtn = document.getElementById('manual-compass');
+    if (manualBtn) {
+        manualBtn.addEventListener('click', function() {
+            console.log('✋ Manual compass mode activated');
+        });
+    }
+    
+    // Reset button
+    const resetBtn = document.getElementById('reset-compass');
+    if (resetBtn) {
+        resetBtn.addEventListener('click', function() {
+            console.log('🔄 Compass reset');
+            // Reset needle rotation
+            const needle = document.querySelector('.traditional-needle');
+            if (needle) {
+                needle.style.transform = 'translate(-50%, -100%) rotate(0deg)';
+            }
+        });
+    }
+}
+
+// Add CSS for selected state
+const style = document.createElement('style');
+style.textContent = `
+    .bagua-sector.selected {
+        transform: scale(1.15) translateZ(0) !important;
+        box-shadow: 
+            0 16px 48px rgba(255, 215, 0, 0.4),
+            0 8px 24px rgba(196, 30, 58, 0.3),
+            inset 0 4px 12px rgba(255, 255, 255, 0.5) !important;
+        border-color: #ffd700 !important;
+        border-width: 4px !important;
+        z-index: 20 !important;
+    }
+`;
+document.head.appendChild(style);

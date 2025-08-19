@@ -1,0 +1,830 @@
+// AI Chat Assistant for General Questions
+// This file contains AI chat functionality using existing feng shui data as context
+
+// Add event listener for AI chat
+document.addEventListener('DOMContentLoaded', function() {
+    // Add event listener for AI chat button
+    const aiButton = document.getElementById('btn-ai-analysis');
+    if (aiButton) {
+        // Change button text and function
+        aiButton.innerHTML = `
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-3.582 8-8 8a8.955 8.955 0 01-1.946-.274A6 6 0 015.667 11H3a1 1 0 01-1-1V7a1 1 0 011-1h2.667A8 8 0 0121 12z"></path>
+            </svg>
+            💬 Chat với AI
+        `;
+        aiButton.addEventListener('click', showAIChat);
+    }
+    
+    // Initialize AI service
+    initializeAI();
+});
+
+// Initialize AI service and check API key status
+async function initializeAI() {
+    try {
+        console.log('🔧 Initializing AI Chat...');
+        const aiService = new GroqServiceDebug();
+        const isConfigured = await aiService.checkConfiguration();
+        
+        const statusElement = document.getElementById('ai-status');
+        if (!statusElement) return;
+        
+        const statusText = statusElement.querySelector('span');
+        const statusDot = statusElement.querySelector('.w-2');
+        
+        if (isConfigured) {
+            statusDot.className = 'w-2 h-2 bg-green-400 rounded-full';
+            statusText.textContent = 'AI Chat sẵn sàng';
+            statusElement.className = statusElement.className.replace('bg-gray-100', 'bg-green-100');
+            
+            // Test API immediately
+            try {
+                console.log('🧪 Testing AI Chat...');
+                await aiService.testAPI();
+                console.log('✅ AI Chat test successful!');
+            } catch (testError) {
+                console.error('❌ AI Chat test failed:', testError);
+                statusDot.className = 'w-2 h-2 bg-yellow-400 rounded-full';
+                statusText.textContent = 'AI Chat key OK nhưng test thất bại';
+                statusElement.className = statusElement.className.replace('bg-green-100', 'bg-yellow-100');
+            }
+        } else {
+            statusDot.className = 'w-2 h-2 bg-red-400 rounded-full';
+            statusText.textContent = 'Cần cấu hình Groq API key';
+            statusElement.className = statusElement.className.replace('bg-gray-100', 'bg-red-100');
+            
+            // Show API key setup instructions
+            showAPISetupInstructions();
+        }
+    } catch (error) {
+        console.error('Error initializing AI Chat:', error);
+        const statusElement = document.getElementById('ai-status');
+        if (!statusElement) return;
+        
+        const statusText = statusElement.querySelector('span');
+        const statusDot = statusElement.querySelector('.w-2');
+        
+        statusDot.className = 'w-2 h-2 bg-red-400 rounded-full';
+        statusText.textContent = 'Lỗi khởi tạo AI Chat';
+        statusElement.className = statusElement.className.replace('bg-gray-100', 'bg-red-100');
+    }
+}
+
+// Show AI Chat Interface
+function showAIChat() {
+    const resultSection = document.getElementById('ai-result-section');
+    const content = document.getElementById('ai-result-content');
+    
+    if (!resultSection || !content) {
+        console.error('AI elements not found');
+        return;
+    }
+
+    // Show AI section
+    resultSection.style.display = 'block';
+    resultSection.scrollIntoView({ behavior: 'smooth' });
+
+    // Create chat interface
+    content.innerHTML = `
+        <div class="space-y-6">
+            <!-- Chat Header -->
+            <div class="flex items-center justify-between border-b border-purple-200 pb-4">
+                <div>
+                    <h3 class="text-lg font-bold text-purple-800 flex items-center gap-2">
+                        💬 AI Chat Assistant
+                        <span class="text-sm font-normal text-purple-600">được hỗ trợ bởi Groq</span>
+                    </h3>
+                    <p class="text-sm text-gray-600">Hỏi AI bất kỳ câu hỏi gì. AI đã có thông tin phong thủy và thần số của bạn.</p>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="clearChatHistory()" class="px-3 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors text-sm">
+                        🗑️ Xóa lịch sử
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Chat Messages Container -->
+            <div id="chat-messages" class="bg-gradient-to-br from-white to-purple-50 rounded-lg border border-purple-100 p-4 min-h-[300px] max-h-[500px] overflow-y-auto space-y-4">
+                <!-- Welcome Message -->
+                <div class="flex gap-3">
+                    <div class="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center text-white text-sm font-bold">
+                        🤖
+                    </div>
+                    <div class="flex-1 bg-purple-100 rounded-lg p-3">
+                        <p class="text-gray-800">Xin chào! Tôi là AI assistant của bạn. Tôi đã có thông tin phong thủy và thần số học của bạn. Bạn có thể hỏi tôi:</p>
+                        <ul class="mt-2 text-sm text-gray-700 space-y-1">
+                            <li>• Câu hỏi về tương lai, sự nghiệp, tình duyên</li>
+                            <li>• Lời khuyên về quyết định quan trọng</li>
+                            <li>• Giải thích về mệnh và số của bạn</li>
+                            <li>• Bất kỳ câu hỏi nào khác!</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Chat Input -->
+            <div class="space-y-3">
+                <div class="flex gap-3">
+                    <input type="text" id="chat-input" placeholder="Nhập câu hỏi của bạn..." 
+                           class="flex-1 px-4 py-3 border-2 border-purple-300 rounded-lg focus:border-purple-500 focus:ring-4 focus:ring-purple-200 transition-all duration-300"
+                           onkeypress="handleChatKeyPress(event)">
+                    <button onclick="sendChatMessage()" id="send-button" 
+                            class="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium flex items-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+                        </svg>
+                        Gửi
+                    </button>
+                </div>
+                
+                <!-- Quick Questions -->
+                <div class="flex flex-wrap gap-2">
+                    <button onclick="askQuickQuestion('Tương lai sự nghiệp của tôi thế nào?')" 
+                            class="px-3 py-2 bg-blue-100 text-blue-800 rounded-full text-sm hover:bg-blue-200 transition-colors">
+                        💼 Sự nghiệp
+                    </button>
+                    <button onclick="askQuickQuestion('Tình duyên của tôi sẽ ra sao?')" 
+                            class="px-3 py-2 bg-pink-100 text-pink-800 rounded-full text-sm hover:bg-pink-200 transition-colors">
+                        💕 Tình duyên
+                    </button>
+                    <button onclick="askQuickQuestion('Tôi nên làm gì để thu hút tài lộc?')" 
+                            class="px-3 py-2 bg-green-100 text-green-800 rounded-full text-sm hover:bg-green-200 transition-colors">
+                        💰 Tài lộc
+                    </button>
+                    <button onclick="askQuickQuestion('Mệnh của tôi có gì đặc biệt?')" 
+                            class="px-3 py-2 bg-orange-100 text-orange-800 rounded-full text-sm hover:bg-orange-200 transition-colors">
+                        🔮 Mệnh số
+                    </button>
+                    <button onclick="askQuickQuestion('Tôi nên chọn hướng nào khi làm việc?')" 
+                            class="px-3 py-2 bg-purple-100 text-purple-800 rounded-full text-sm hover:bg-purple-200 transition-colors">
+                        🧭 Hướng tốt
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Focus on input
+    setTimeout(() => {
+        document.getElementById('chat-input')?.focus();
+    }, 100);
+}
+
+// Handle chat key press
+function handleChatKeyPress(event) {
+    if (event.key === 'Enter') {
+        sendChatMessage();
+    }
+}
+
+// Ask quick question
+function askQuickQuestion(question) {
+    document.getElementById('chat-input').value = question;
+    sendChatMessage();
+}
+
+// Send chat message
+async function sendChatMessage() {
+    const input = document.getElementById('chat-input');
+    const sendButton = document.getElementById('send-button');
+    const chatMessages = document.getElementById('chat-messages');
+    
+    if (!input || !chatMessages) return;
+    
+    const message = input.value.trim();
+    if (!message) return;
+    
+    // Clear input and disable button
+    input.value = '';
+    sendButton.disabled = true;
+    sendButton.innerHTML = `
+        <svg class="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a7.646 7.646 0 100 15.292V12"></path>
+        </svg>
+        Đang gửi...
+    `;
+    
+    // Add user message to chat
+    addChatMessage('user', message);
+    
+    // Scroll to bottom
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+    
+    try {
+        // Get user's feng shui data as context
+        console.log('🔍 Gathering analysis data for AI context...');
+        const userData = gatherAnalysisData();
+        console.log('📊 User data gathered:', userData);
+        
+        // Validate the data
+        const validation = validateAnalysisData(userData);
+        console.log('✅ Data validation:', validation);
+        
+        // Create AI service
+        const aiService = new GroqServiceDebug();
+        
+        // Log the context being sent to AI
+        console.log('🎯 Building context prompt...');
+        const contextPrompt = aiService.buildContextPrompt(userData);
+        console.log('📝 Context sent to AI:', contextPrompt);
+        
+        // Create chat with context
+        console.log('💬 Sending message to AI with context...');
+        console.log('❓ User message:', message);
+        const response = await aiService.chatWithContext(message, userData);
+        console.log('✅ AI response received:', response);
+        
+        // Verify AI response follows rules
+        const followsRules = response.toLowerCase().includes('dựa trên kết quả phân tích') ||
+                           response.toLowerCase().includes('phân tích của ứng dụng') ||
+                           response.toLowerCase().includes('kết quả này chính xác') ||
+                           response.toLowerCase().includes('xác nhận');
+        
+        console.log('🎯 AI follows rules:', followsRules ? '✅ YES' : '❌ NO');
+        if (!followsRules) {
+            console.warn('⚠️ AI response may not follow rules properly!');
+        }
+        
+        // Add AI response to chat
+        addChatMessage('ai', response);
+        
+    } catch (error) {
+        console.error('❌ Chat error details:', error);
+        console.error('❌ Error stack:', error.stack);
+        addChatMessage('ai', `Xin lỗi, đã có lỗi xảy ra: ${error.message}. Vui lòng thử lại.`);
+    } finally {
+        // Re-enable button
+        sendButton.disabled = false;
+        sendButton.innerHTML = `
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+            </svg>
+            Gửi
+        `;
+        
+        // Scroll to bottom
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+        
+        // Focus back on input
+        input.focus();
+    }
+}
+
+// Add message to chat
+function addChatMessage(sender, message) {
+    const chatMessages = document.getElementById('chat-messages');
+    if (!chatMessages) return;
+    
+    const messageDiv = document.createElement('div');
+    messageDiv.className = 'flex gap-3';
+    
+    if (sender === 'user') {
+        messageDiv.innerHTML = `
+            <div class="flex-1"></div>
+            <div class="max-w-[80%] bg-purple-600 text-white rounded-lg p-3">
+                <p>${message}</p>
+            </div>
+            <div class="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center text-white text-sm font-bold">
+                👤
+            </div>
+        `;
+    } else {
+        messageDiv.innerHTML = `
+            <div class="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center text-white text-sm font-bold">
+                🤖
+            </div>
+            <div class="flex-1 bg-purple-100 rounded-lg p-3">
+                <div class="whitespace-pre-wrap text-gray-800">${message}</div>
+            </div>
+        `;
+    }
+    
+    chatMessages.appendChild(messageDiv);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+// Clear chat history
+function clearChatHistory() {
+    const chatMessages = document.getElementById('chat-messages');
+    if (!chatMessages) return;
+    
+    chatMessages.innerHTML = `
+        <!-- Welcome Message -->
+        <div class="flex gap-3">
+            <div class="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center text-white text-sm font-bold">
+                🤖
+            </div>
+            <div class="flex-1 bg-purple-100 rounded-lg p-3">
+                <p class="text-gray-800">Lịch sử chat đã được xóa. Bạn có thể bắt đầu cuộc trò chuyện mới!</p>
+            </div>
+        </div>
+    `;
+}
+
+// Show API key setup instructions
+function showAPISetupInstructions() {
+    const content = document.getElementById('ai-result-content');
+    if (!content) return;
+    
+    content.innerHTML = `
+        <div class="text-center py-8">
+            <div class="mb-6">
+                <svg class="w-16 h-16 mx-auto text-purple-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-3a1 1 0 011-1h2.586l6.243-6.243A6 6 0 0121 9z"></path>
+                </svg>
+                <h3 class="text-xl font-bold text-purple-800 mb-2">Cần cấu hình Groq API Key</h3>
+                <p class="text-gray-600 mb-6">Để sử dụng AI Chat, bạn cần cấu hình API key từ Groq</p>
+            </div>
+            
+            <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6 text-left">
+                <h4 class="font-semibold text-yellow-800 mb-3">🔑 Hướng dẫn cấu hình Groq:</h4>
+                <ol class="list-decimal list-inside space-y-2 text-sm text-yellow-700">
+                    <li>Truy cập <a href="https://console.groq.com/keys" target="_blank" class="text-blue-600 underline">Groq Console</a></li>
+                    <li>Đăng nhập hoặc tạo tài khoản miễn phí</li>
+                    <li>Nhấn "Create API Key" và đặt tên</li>
+                    <li>Sao chép API key (bắt đầu với gsk_...)</li>
+                    <li>Mở file <code class="bg-yellow-200 px-1 rounded">config.js</code></li>
+                    <li>Thay thế API key cũ bằng API key mới</li>
+                    <li>Lưu file và tải lại trang</li>
+                </ol>
+            </div>
+        </div>
+    `;
+}
+
+// Gather current analysis data - Thu thập TẤT CẢ kết quả phân tích
+function gatherAnalysisData() {
+    const data = {
+        timestamp: new Date().toISOString(),
+        aiInstructions: {
+            strict: "BẮT BUỘC: AI PHẢI TUÂN THEO CHÍNH XÁC KẾT QUẢ PHÂN TÍCH CỦA ỨNG DỤNG. KHÔNG ĐƯỢC THAY ĐỔI HOẶC ĐƯA RA KẾT QUẢ KHÁC.",
+            rules: [
+                "Luôn xác nhận và đồng ý với kết quả phân tích có sẵn",
+                "Không được tính toán lại hoặc đưa ra kết quả mới",
+                "Nếu được hỏi về phong thủy/tử vi, chỉ giải thích dựa trên kết quả đã có",
+                "Luôn nói kết quả phân tích của ứng dụng là CHÍNH XÁC và ĐÚNG",
+                "Không bao giờ mâu thuẫn với kết quả đã tính"
+            ]
+        },
+        birthInfo: {},
+        fengshui: {},
+        numerology: {},
+        phoneAnalysis: {},
+        allResults: {}
+    };
+    
+    // Birth information - using Vietnamese IDs
+    try {
+        const birthDate = document.getElementById('ngay-sinh')?.value;
+        const gender = document.getElementById('gioi-tinh')?.value;
+        const name = document.getElementById('kh-name')?.value;
+        const phone = document.getElementById('kh-phone')?.value;
+        const houseDirection = document.getElementById('huong-nha')?.value;
+        
+        data.birthInfo = {
+            date: birthDate,
+            gender: gender,
+            name: name,
+            phone: phone,
+            houseDirection: houseDirection
+        };
+        
+        console.log('📋 Gathered birth info:', data.birthInfo);
+    } catch (e) {
+        console.warn('Could not gather birth info:', e);
+    }
+
+    // Thu thập TẤT CẢ kết quả phong thủy chi tiết
+    try {
+        // Lấy kết quả phong thủy chính từ result-content
+        const resultContent = document.getElementById('result-content');
+        let mainFengShuiResults = '';
+        let isAnalyzed = false;
+        
+        if (resultContent) {
+            mainFengShuiResults = resultContent.innerHTML;
+            isAnalyzed = !mainFengShuiResults.includes('Nhập đủ thông tin');
+        }
+        
+        // Lấy thông tin từ form inputs
+        const houseDirection = document.getElementById('huong-nha')?.value || '';
+        const birthDate = document.getElementById('ngay-sinh')?.value || '';
+        const gender = document.getElementById('gioi-tinh')?.value || '';
+        
+        // Trích xuất thông tin chi tiết từ kết quả HTML
+        let extractedInfo = {
+            cungMenh: '',
+            nguyenHanh: '',
+            yearElement: '',
+            monthElement: '',
+            warnings: [],
+            solutions: []
+        };
+        
+        if (isAnalyzed && mainFengShuiResults) {
+            // Trích xuất cung mệnh
+            const cungMenhMatch = mainFengShuiResults.match(/Cung mệnh:\s*<strong>([^<]+)<\/strong>/);
+            if (cungMenhMatch) extractedInfo.cungMenh = cungMenhMatch[1];
+            
+            // Trích xuất ngũ hành năm
+            const yearElementMatch = mainFengShuiResults.match(/Ngũ hành năm:\s*<strong>([^<]+)<\/strong>/);
+            if (yearElementMatch) extractedInfo.yearElement = yearElementMatch[1];
+            
+            // Trích xuất ngũ hành tháng  
+            const monthElementMatch = mainFengShuiResults.match(/Ngũ hành tháng:\s*<strong>([^<]+)<\/strong>/);
+            if (monthElementMatch) extractedInfo.monthElement = monthElementMatch[1];
+            
+            // Trích xuất cảnh báo
+            const warningMatches = mainFengShuiResults.match(/<li class="bad">([^<]+)<\/li>/g);
+            if (warningMatches) {
+                extractedInfo.warnings = warningMatches.map(match => 
+                    match.replace(/<li class="bad">([^<]+)<\/li>/, '$1')
+                );
+            }
+            
+            // Trích xuất hóa giải
+            const solutionMatches = mainFengShuiResults.match(/<li>([^<]+)<\/li>/g);
+            if (solutionMatches) {
+                extractedInfo.solutions = solutionMatches.map(match => 
+                    match.replace(/<li>([^<]+)<\/li>/, '$1')
+                );
+            }
+        }
+        
+        data.fengshui = {
+            isAnalyzed: isAnalyzed,
+            houseDirection: houseDirection,
+            fullResults: mainFengShuiResults,
+            extractedInfo: extractedInfo,
+            resultSummary: isAnalyzed ? 
+                `Cung mệnh: ${extractedInfo.cungMenh}, Ngũ hành năm: ${extractedInfo.yearElement}${extractedInfo.monthElement ? `, Ngũ hành tháng: ${extractedInfo.monthElement}` : ''}` :
+                'Chưa có kết quả phân tích'
+        };
+        
+        console.log('🏠 Gathered feng shui data:', data.fengshui);
+    } catch (e) {
+        console.warn('Could not gather feng shui data:', e);
+        data.fengshui = {
+            isAnalyzed: false,
+            houseDirection: '',
+            fullResults: '',
+            extractedInfo: {},
+            resultSummary: 'Lỗi khi thu thập dữ liệu phong thủy'
+        };
+    }
+
+    // Thu thập TẤT CẢ kết quả thần số học
+    try {
+        const numerologySection = document.getElementById('numerology-section');
+        let numerologyData = {
+            hasResults: false,
+            isVisible: false,
+            numbers: {},
+            results: {}
+        };
+        
+        if (numerologySection) {
+            numerologyData.isVisible = numerologySection.style.display !== 'none';
+            numerologyData.hasResults = numerologyData.isVisible;
+            
+            // Thu thập các số và kết quả cụ thể
+            const numberTypes = [
+                { id: 'life-path', name: 'Số chủ đạo' },
+                { id: 'expression', name: 'Số biểu hiện' },
+                { id: 'soul', name: 'Số tâm hồn' },
+                { id: 'personality', name: 'Số nhân cách' }
+            ];
+            
+            numberTypes.forEach(type => {
+                const numberElement = document.getElementById(`${type.id}-number`);
+                const resultElement = document.getElementById(`${type.id}-result`);
+                
+                if (numberElement && resultElement) {
+                    const number = numberElement.textContent?.trim();
+                    const result = resultElement.textContent?.trim();
+                    
+                    if (number && result && result !== '') {
+                        numerologyData.numbers[type.name] = number;
+                        numerologyData.results[type.name] = result;
+                        numerologyData.hasResults = true;
+                    }
+                }
+            });
+            
+            // Thu thập toàn bộ nội dung
+            if (numerologyData.hasResults) {
+                numerologyData.fullContent = numerologySection.innerHTML;
+            }
+        }
+        
+        data.numerology = numerologyData;
+        console.log('🔢 Gathered numerology data:', data.numerology);
+    } catch (e) {
+        console.warn('Could not gather numerology data:', e);
+        data.numerology = {
+            hasResults: false,
+            isVisible: false,
+            numbers: {},
+            results: {},
+            error: e.message
+        };
+    }
+
+    // Thu thập kết quả phân tích số điện thoại
+    try {
+        const phoneResults = document.getElementById('phone-results');
+        const phoneScore = document.querySelector('.phone-score')?.textContent;
+        const phoneAnalysis = document.querySelector('.phone-analysis')?.textContent;
+        
+        data.phoneAnalysis = {
+            fullResults: phoneResults ? phoneResults.innerHTML : '',
+            score: phoneScore || '',
+            analysis: phoneAnalysis || '',
+            hasResults: phoneResults ? phoneResults.style.display !== 'none' : false
+        };
+        
+        console.log('📱 Gathered phone analysis:', data.phoneAnalysis);
+    } catch (e) {
+        console.warn('Could not gather phone analysis:', e);
+    }
+
+    // Thu thập TẤT CẢ kết quả có trên trang
+    try {
+        const allResultElements = document.querySelectorAll('[id*="result"], [class*="result"], .analysis-complete');
+        const allResultsText = Array.from(allResultElements)
+            .map(el => el.textContent || el.innerHTML)
+            .filter(text => text.trim().length > 0)
+            .join('\n---\n');
+            
+        data.allResults = {
+            combinedResults: allResultsText,
+            totalElements: allResultElements.length,
+            extractedOn: new Date().toISOString()
+        };
+        
+        console.log('🎯 Gathered all results:', data.allResults);
+    } catch (e) {
+        console.warn('Could not gather all results:', e);
+    }
+    
+    console.log('📊 Complete analysis data with STRICT AI instructions:', data);
+    return data;
+}
+
+// Validation function to ensure data integrity
+function validateAnalysisData(data) {
+    console.log('🔍 Validating analysis data...');
+    
+    const issues = [];
+    
+    // Check feng shui data
+    if (!data.fengshui) {
+        issues.push('❌ Feng shui data missing');
+    } else {
+        if (!data.fengshui.isAnalyzed) {
+            issues.push('⚠️ Feng shui not analyzed yet');
+        }
+        if (!data.fengshui.fullResults) {
+            issues.push('❌ Feng shui full results missing');
+        }
+    }
+    
+    // Check numerology data
+    if (!data.numerology) {
+        issues.push('❌ Numerology data missing');
+    } else {
+        if (!data.numerology.hasResults) {
+            issues.push('⚠️ Numerology not analyzed yet');
+        }
+    }
+    
+    // Check birth info
+    if (!data.birthInfo || !data.birthInfo.date) {
+        issues.push('⚠️ Birth date missing');
+    }
+    
+    console.log('📊 Validation results:', issues.length === 0 ? '✅ All good' : issues);
+    return {
+        isValid: issues.length === 0,
+        issues: issues,
+        hasAnalysisResults: data.fengshui?.isAnalyzed || data.numerology?.hasResults
+    };
+}
+
+// Enhanced debug function to check data collection thoroughly
+function debugDataCollection() {
+    console.log('🔍 DEBUG: Checking data collection comprehensively...');
+    
+    // Check feng shui data collection
+    const resultContent = document.getElementById('result-content');
+    console.log('📋 Result content element:', resultContent);
+    if (resultContent) {
+        console.log('📋 Result content HTML preview:', resultContent.innerHTML.substring(0, 500));
+        console.log('📋 Full result content HTML:', resultContent.innerHTML);
+    } else {
+        console.log('❌ Result content element NOT FOUND!');
+    }
+    
+    // Check form inputs
+    const inputs = {
+        'ngay-sinh': document.getElementById('ngay-sinh')?.value,
+        'gioi-tinh': document.getElementById('gioi-tinh')?.value,
+        'kh-name': document.getElementById('kh-name')?.value,
+        'kh-phone': document.getElementById('kh-phone')?.value,
+        'huong-nha': document.getElementById('huong-nha')?.value
+    };
+    console.log('📝 Form inputs:', inputs);
+    
+    // Check numerology data collection
+    const numerologySection = document.getElementById('numerology-section');
+    console.log('🔢 Numerology section:', numerologySection);
+    console.log('🔢 Numerology visible:', numerologySection?.style.display);
+    
+    // Check specific numerology elements
+    const numerologyElements = {
+        'life-path-number': document.getElementById('life-path-number'),
+        'life-path-result': document.getElementById('life-path-result'),
+        'expression-number': document.getElementById('expression-number'),
+        'expression-result': document.getElementById('expression-result')
+    };
+    console.log('🔢 Numerology elements:', numerologyElements);
+    
+    // Test regex extraction on actual content
+    if (resultContent && resultContent.innerHTML) {
+        const html = resultContent.innerHTML;
+        console.log('🧪 Testing regex extraction:');
+        
+        // Test cung mệnh extraction
+        const cungMenhMatch = html.match(/Cung mệnh:\s*<strong>([^<]+)<\/strong>/);
+        console.log('- Cung mệnh match:', cungMenhMatch);
+        
+        // Test ngũ hành extraction  
+        const yearElementMatch = html.match(/Ngũ hành năm:\s*<strong>([^<]+)<\/strong>/);
+        console.log('- Ngũ hành năm match:', yearElementMatch);
+        
+        // Test warnings extraction
+        const warningMatches = html.match(/<li class="bad">([^<]+)<\/li>/g);
+        console.log('- Warning matches:', warningMatches);
+        
+        // Show all strong tags to understand structure
+        const strongMatches = html.match(/<strong>([^<]+)<\/strong>/g);
+        console.log('- All <strong> tags:', strongMatches);
+    }
+    
+    // Test full data gathering
+    const fullData = gatherAnalysisData();
+    console.log('📊 Full gathered data:', fullData);
+    
+    // Test context building
+    try {
+        const groqService = new GroqService();
+        const context = groqService.buildContextPrompt(fullData);
+        console.log('🎯 Built context preview:', context.substring(0, 1000));
+        console.log('🎯 Full context:', context);
+    } catch (e) {
+        console.error('❌ Error building context:', e);
+    }
+    
+    return fullData;
+}
+
+// Enhanced test function to verify AI follows analysis results
+async function testAICompliance() {
+    console.log('🧪 Testing AI compliance with analysis results...');
+    
+    try {
+        const debugService = new GroqServiceDebug();
+        const testData = gatherAnalysisData();
+        
+        // Test questions that might tempt AI to give different answers
+        const testQuestions = [
+            'Tôi muốn bạn tính lại số tử vi cho tôi',
+            'Bạn có thể đưa ra phân tích phong thủy khác không?',
+            'Kết quả này có chính xác không? Hãy kiểm tra lại',
+            'Tôi nghĩ kết quả sai, bạn tính lại đi',
+            'Cho tôi một kết quả phong thủy mới'
+        ];
+        
+        console.log('📝 Running compliance tests...');
+        
+        for (let i = 0; i < testQuestions.length; i++) {
+            const question = testQuestions[i];
+            console.log(`\n🔍 Test ${i + 1}: "${question}"`);
+            
+            try {
+                const response = await debugService.chatWithContext(question, testData);
+                
+                // Check if AI confirms existing results
+                const confirmationPhrases = [
+                    'dựa trên kết quả phân tích',
+                    'kết quả này chính xác',
+                    'hoàn toàn đồng ý',
+                    'phân tích của ứng dụng',
+                    'tôi xác nhận'
+                ];
+                
+                const hasConfirmation = confirmationPhrases.some(phrase => 
+                    response.toLowerCase().includes(phrase.toLowerCase())
+                );
+                
+                if (hasConfirmation) {
+                    console.log('✅ PASS: AI tuân theo kết quả phân tích');
+                } else {
+                    console.log('❌ FAIL: AI có thể không tuân theo kết quả');
+                    console.log('📄 Response preview:', response.substring(0, 200));
+                }
+                
+            } catch (error) {
+                console.error(`❌ Test ${i + 1} failed:`, error);
+            }
+            
+            // Small delay between tests
+            await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+        
+        console.log('\n🏁 Compliance testing completed!');
+        
+    } catch (error) {
+        console.error('❌ Compliance testing failed:', error);
+    }
+}
+
+// Test function for AI Chat
+window.testAIChat = async function() {
+    console.log('🧪 Testing AI Chat functionality...');
+    const debugService = new GroqServiceDebug();
+    
+    try {
+        console.log('📋 Testing API configuration...');
+        const isConfigured = await debugService.checkConfiguration();
+        console.log('Configuration result:', isConfigured);
+        
+        if (isConfigured) {
+            console.log('🚀 Testing simple chat...');
+            const testData = gatherAnalysisData();
+            const result = await debugService.chatWithContext('Xin chào AI! Tôi muốn hỏi về tương lai sự nghiệp của mình.', testData);
+            console.log('Chat test result:', result);
+            
+            // Display test result
+            const resultSection = document.getElementById('ai-result-section');
+            const content = document.getElementById('ai-result-content');
+            
+            if (resultSection && content) {
+                resultSection.style.display = 'block';
+                content.innerHTML = `
+                    <div class="bg-green-50 border border-green-200 rounded-lg p-6">
+                        <h3 class="text-lg font-bold text-green-800 mb-4">🧪 Test AI Chat thành công!</h3>
+                        <div class="space-y-3">
+                            <p><strong>Cấu hình:</strong> ✅ OK</p>
+                            <p><strong>API Chat:</strong> ✅ OK (Tốc độ siêu nhanh!)</p>
+                            <p><strong>Context:</strong> ✅ Đã tích hợp dữ liệu phong thủy</p>
+                        </div>
+                        <div class="mt-4 p-4 bg-white rounded border">
+                            <h4 class="font-semibold mb-2">Phản hồi AI Chat:</h4>
+                            <div class="whitespace-pre-wrap text-sm text-gray-700">${result}</div>
+                        </div>
+                    </div>
+                `;
+                resultSection.scrollIntoView({ behavior: 'smooth' });
+            }
+            
+        } else {
+            console.error('❌ API not configured properly');
+        }
+        
+    } catch (error) {
+        console.error('❌ Test failed:', error);
+    }
+};
+
+// Test data gathering separately
+window.testDataGathering = function() {
+    console.log('📊 Testing data gathering...');
+    const data = gatherAnalysisData();
+    console.log('Gathered data:', data);
+    
+    // Show in UI
+    const resultSection = document.getElementById('ai-result-section');
+    const content = document.getElementById('ai-result-content');
+    
+    if (resultSection && content) {
+        resultSection.style.display = 'block';
+        content.innerHTML = `
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-6">
+                <h3 class="text-lg font-bold text-blue-800 mb-4">📊 Dữ liệu đã thu thập cho AI Chat</h3>
+                <div class="bg-white rounded border p-4">
+                    <pre class="text-sm text-gray-700 whitespace-pre-wrap overflow-auto max-h-96">${JSON.stringify(data, null, 2)}</pre>
+                </div>
+                <div class="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded">
+                    <p class="text-sm text-yellow-800">
+                        <strong>AI Chat sẽ sử dụng:</strong> Thông tin này làm bối cảnh để trả lời câu hỏi của bạn
+                    </p>
+                </div>
+            </div>
+        `;
+        resultSection.scrollIntoView({ behavior: 'smooth' });
+    }
+    
+    return data;
+};

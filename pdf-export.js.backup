@@ -1,0 +1,476 @@
+// PDF Export functionality using pdfmake
+// Wait for pdfMake to be available
+(function() {
+  'use strict';
+  
+  // Check if pdfMake is available
+  if (typeof pdfMake === 'undefined') {
+    console.warn('⚠️ pdfMake not available when loading pdf-export.js');
+    // Try to wait for it
+    const checkPdfMake = setInterval(() => {
+      if (typeof pdfMake !== 'undefined') {
+        clearInterval(checkPdfMake);
+        console.log('✅ pdfMake now available, initializing PDF export...');
+        initializePDFExport();
+      }
+    }, 100);
+    return;
+  }
+  
+  // pdfMake is available, initialize immediately
+  initializePDFExport();
+  
+  function initializePDFExport() {
+    console.log('🔄 Initializing PDF Export with pdfMake...');
+
+class PDFExporter {
+  constructor() {
+    // Đặt font mặc định và thiết lập ban đầu
+    if (typeof pdfMake !== 'undefined') {
+      pdfMake.fonts = {
+        Roboto: {
+          normal: 'https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/fonts/Roboto/Roboto-Regular.ttf',
+          bold: 'https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/fonts/Roboto/Roboto-Medium.ttf',
+          italics: 'https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/fonts/Roboto/Roboto-Italic.ttf',
+          bolditalics: 'https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/fonts/Roboto/Roboto-MediumItalic.ttf'
+        }
+      };
+      
+      // Thiết lập ngôn ngữ mặc định 
+      pdfMake.vfs = pdfMake.vfs || {};
+    }
+  }
+
+  createHeader(text) {
+    return {
+      text: text,
+      style: 'header',
+      alignment: 'center',
+      margin: [0, 0, 0, 20]
+    };
+  }
+
+  createSection(title) {
+    return {
+      stack: [
+        {
+          text: title,
+          style: 'sectionHeader',
+          margin: [0, 15, 0, 10]
+        }
+      ]
+    };
+  }
+
+  createInfoTable(data) {
+    return {
+      table: {
+        widths: ['30%', '70%'],
+        body: Object.entries(data).map(([key, value]) => [
+          { text: key, style: 'tableHeader' },
+          { text: value || '—', style: 'tableCell' }
+        ])
+      },
+      layout: {
+        hLineWidth: function(i, node) {
+          return (i === 0 || i === node.table.body.length) ? 1 : 0.5;
+        },
+        vLineWidth: function(i, node) {
+          return (i === 0 || i === node.table.widths.length) ? 1 : 0.5;
+        },
+        hLineColor: function(i, node) {
+          return (i === 0 || i === node.table.body.length) ? '#aaa' : '#ddd';
+        },
+        vLineColor: function(i, node) {
+          return (i === 0 || i === node.table.widths.length) ? '#aaa' : '#ddd';
+        }
+      }
+    };
+  }
+
+  createBulletList(items) {
+    return {
+      ul: items.map(item => ({
+        text: item,
+        margin: [0, 5]
+      }))
+    };
+  }
+
+  async addCompassImage() {
+    try {
+      const compassElement = document.querySelector('#d3-compass-container');
+      if (!compassElement) {
+        console.warn('Compass container not found, using placeholder');
+        return {
+          text: '🧭 [La bàn phong thủy sẽ được hiển thị khi phân tích]',
+          style: 'compassPlaceholder',
+          alignment: 'center',
+          margin: [0, 10, 0, 10]
+        };
+      }
+
+      const svgElement = compassElement.querySelector('svg');
+      if (!svgElement) {
+        console.warn('SVG element not found, using placeholder');
+        return {
+          text: '🧭 [La bàn phong thủy sẽ được hiển thị khi phân tích]',
+          style: 'compassPlaceholder',
+          alignment: 'center', 
+          margin: [0, 10, 0, 10]
+        };
+      }
+
+      return new Promise((resolve, reject) => {
+        try {
+          // Convert SVG to image
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          
+          // Set canvas size
+          canvas.width = 600; // Fixed width
+          canvas.height = 600; // Fixed height
+          
+          // Create a temporary image
+          const img = new Image();
+          const svgData = new XMLSerializer().serializeToString(svgElement);
+          const svgBlob = new Blob([svgData], {type: 'image/svg+xml;charset=utf-8'});
+          const url = URL.createObjectURL(svgBlob);
+          
+          img.onload = () => {
+            try {
+              // Fill background
+              ctx.fillStyle = 'white';
+              ctx.fillRect(0, 0, canvas.width, canvas.height);
+              
+              // Draw image
+              ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+              
+              // Convert to PNG
+              const pngData = canvas.toDataURL('image/png');
+              
+              // Clean up
+              URL.revokeObjectURL(url);
+              
+              resolve({
+                image: pngData,
+                width: 400, // PDF width
+                height: 400, // PDF height
+                alignment: 'center',
+                margin: [0, 10]
+              });
+            } catch (error) {
+              console.error('Error drawing image:', error);
+              resolve({
+                text: '🧭 [Lỗi hiển thị la bàn phong thủy]',
+                style: 'compassPlaceholder',
+                alignment: 'center',
+                margin: [0, 10, 0, 10]
+              });
+            }
+          };
+
+          img.onerror = () => {
+            console.error('Error loading SVG as image');
+            URL.revokeObjectURL(url);
+            resolve({
+              text: '🧭 [Lỗi tải la bàn phong thủy]',
+              style: 'compassPlaceholder',
+              alignment: 'center',
+              margin: [0, 10, 0, 10]
+            });
+          };
+          
+          img.src = url;
+          
+        } catch (error) {
+          console.error('Error in compass image generation:', error);
+          resolve({
+            text: '🧭 [Lỗi tạo hình ảnh la bàn]',
+            style: 'compassPlaceholder',
+            alignment: 'center',
+            margin: [0, 10, 0, 10]
+          });
+        }
+      });
+      
+    } catch (error) {
+      console.error('Error in addCompassImage:', error);
+      return {
+        text: '🧭 [Không thể tải la bàn phong thủy]',
+        style: 'compassPlaceholder',
+        alignment: 'center',
+        margin: [0, 10, 0, 10]
+      };
+    }
+  }
+
+  formatCurrency(amount) {
+    return new Intl.NumberFormat('vi-VN', {
+      style: 'currency',
+      currency: 'VND'
+    }).format(amount);
+  }
+
+  async generatePDF(data) {
+    try {
+      // Đợi lấy hình ảnh la bàn
+      const compassImage = await this.addCompassImage();
+      
+      const docDefinition = {
+        pageSize: 'A4',
+        pageOrientation: 'portrait',
+        pageMargins: [40, 60, 40, 60],
+        footer: function(currentPage, pageCount) {
+          return {
+            text: `Trang ${currentPage}/${pageCount}`,
+            alignment: 'center',
+            margin: [0, 30, 0, 0],
+            style: 'footer'
+          };
+        },
+        content: [
+          // Header và tiêu đề
+          this.createHeader('BÁO CÁO PHONG THỦY & THẦN SỐ HỌC'),
+          {
+            text: `Ngày tạo: ${new Date().toLocaleDateString('vi-VN')}`,
+            alignment: 'right',
+            style: 'date'
+          },
+
+          // Thông tin khách hàng
+          this.createSection('THÔNG TIN KHÁCH HÀNG'),
+          this.createInfoTable({
+            'Họ và tên': data.fullName,
+            'Ngày sinh': data.birthDate,
+            'Giới tính': data.gender,
+            'Số điện thoại': data.phone
+          }),
+
+          // Thông tin bất động sản
+          this.createSection('THÔNG TIN BẤT ĐỘNG SẢN'),
+          this.createInfoTable({
+            'Tỉnh/Thành': data.province,
+            'Phường/Xã': data.ward,
+            'Địa chỉ': data.addressDetail,
+            'Giá': data.price ? this.formatCurrency(data.price) : '—',
+            'Địa chỉ đầy đủ': data.fullAddress
+          }),
+
+          // La bàn phong thủy
+          this.createSection('LA BÀN PHONG THỦY'),
+          compassImage,
+          this.createInfoTable({
+            'Hướng nhà': data.houseDirection,
+            'Cung mệnh': data.destinyPosition
+          }),
+
+          // Thần số học
+          this.createSection('PHÂN TÍCH THẦN SỐ HỌC'),
+          this.createInfoTable({
+            'Số chủ đạo': data.destinyNumber,
+            'Số linh hồn': data.soulNumber,
+            'Số biểu đạt': data.expressionNumber
+          }),
+          {
+            text: data.numerologyAnalysis,
+            style: 'analysis',
+            margin: [0, 10, 0, 10]
+          },
+
+          // Phân tích phong thủy
+          this.createSection('PHÂN TÍCH PHONG THỦY'),
+          {
+            text: data.fengShuiAnalysis,
+            style: 'analysis',
+            margin: [0, 10, 0, 10]
+          },
+
+          // Khuyến nghị
+          this.createSection('KHUYẾN NGHỊ & LƯU Ý'),
+          this.createBulletList(data.recommendations),
+
+          // Chữ ký
+          {
+            text: 'Chữ ký tư vấn viên',
+            style: 'signatureLabel',
+            margin: [0, 30, 0, 50],
+            alignment: 'right'
+          }
+        ],
+        
+        // Định nghĩa styles
+        styles: {
+          header: {
+            fontSize: 20,
+            bold: true,
+            color: '#c41e3a'
+          },
+          sectionHeader: {
+            fontSize: 14,
+            bold: true,
+            color: '#1e40af',
+            decoration: 'underline'
+          },
+          tableHeader: {
+            bold: true,
+            color: '#1e40af',
+            fontSize: 11
+          },
+          tableCell: {
+            fontSize: 11
+          },
+          analysis: {
+            fontSize: 11,
+            lineHeight: 1.4
+          },
+          compassPlaceholder: {
+            fontSize: 12,
+            color: '#666',
+            italics: true
+          },
+          date: {
+            fontSize: 11,
+            color: '#666',
+            italics: true
+          },
+          footer: {
+            fontSize: 9,
+            color: '#666'
+          },
+          signatureLabel: {
+            fontSize: 11,
+            color: '#666',
+            italics: true
+          }
+        },
+        
+        // Default font
+        defaultStyle: {
+          font: 'Roboto'
+        }
+      };
+
+      // Tạo và tải PDF với xử lý lỗi
+      return new Promise((resolve, reject) => {
+        try {
+          const pdfDoc = pdfMake.createPdf(docDefinition);
+          
+          pdfDoc.download('phong-thuy-than-so-hoc.pdf', () => {
+            console.log('PDF downloaded successfully');
+            resolve(true);
+          }, (error) => {
+            console.error('Error downloading PDF:', error);
+            reject(error);
+          });
+
+        } catch (error) {
+          console.error('Error in PDF generation:', error);
+          reject(new Error('Không thể tạo file PDF: ' + error.message));
+        }
+      });
+
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      throw new Error("Có lỗi khi tạo file PDF: " + error.message);
+    }
+  }
+  // Helper method to create bullet list
+  createBulletList(items) {
+    if (!items || items.length === 0) {
+      return {
+        text: 'Không có khuyến nghị đặc biệt.',
+        style: 'analysis'
+      };
+    }
+    
+    return {
+      ul: items.map(item => ({
+        text: item,
+        margin: [0, 2]
+      })),
+      style: 'analysis'
+    };
+  }
+}
+
+// Global function to trigger PDF export
+async function exportToPDF() {
+  try {
+    console.log('🔄 Starting PDF export process...');
+    
+    const pdfExporter = new PDFExporter();
+    
+    // Prepare data for PDF
+    const data = {
+      fullName: document.getElementById('kh-ten')?.value || "Chưa có thông tin",
+      birthDate: document.getElementById('ngay-sinh')?.value || "Chưa có thông tin", 
+      gender: document.getElementById('gioi-tinh')?.value || "Chưa có thông tin",
+      phone: document.getElementById('kh-phone')?.value || "Chưa có thông tin",
+      destinyNumber: document.getElementById('life-path-number')?.innerText || "Chưa có",
+      soulNumber: document.getElementById('soul-number')?.innerText || "Chưa có",
+      expressionNumber: document.getElementById('expression-number')?.innerText || "Chưa có",
+      numerologyAnalysis: document.getElementById('numerology-content')?.innerText || "Chưa có phân tích",
+      houseDirection: document.getElementById('huong-nha')?.value || "Chưa chọn",
+      destinyPosition: document.getElementById('compass-trigram')?.innerText || "Chưa có",
+      fengShuiAnalysis: document.getElementById('result-content')?.innerText || "Chưa có phân tích",
+      // Thông tin BĐS
+      province: document.getElementById('bd-province')?.value || "",
+      ward: document.getElementById('bd-ward')?.value || "",
+      addressDetail: document.getElementById('bd-address-detail')?.value || "",
+      price: document.getElementById('bd-price')?.value || "",
+      fullAddress: document.getElementById('bd-full-address')?.innerText || "",
+      // Get recommendations from feng shui issues checkboxes
+      recommendations: Array.from(document.querySelectorAll('#issues-container input[type="checkbox"]:checked'))
+        .map(cb => cb.parentElement.textContent.trim()) || []
+    };
+    
+    console.log('📊 Collected data for PDF:', data);
+    
+    // Show loading state
+    const exportBtn = document.getElementById('btn-export-pdf');
+    if (exportBtn) {
+      const originalText = exportBtn.innerHTML;
+      exportBtn.innerHTML = '<span class="animate-spin">🔄</span> Đang xuất PDF...';
+      exportBtn.disabled = true;
+
+      try {
+        console.log('🏗️ Generating PDF...');
+        await pdfExporter.generatePDF(data);
+        
+        // Show success message
+        exportBtn.innerHTML = '<span>✅</span> Đã xuất PDF';
+        setTimeout(() => {
+          exportBtn.innerHTML = originalText;
+          exportBtn.disabled = false;
+        }, 2000);
+        
+        console.log('✅ PDF export completed successfully');
+        
+      } catch (error) {
+        console.error("❌ Error in PDF generation:", error);
+        exportBtn.innerHTML = originalText;
+        exportBtn.disabled = false;
+        throw error;
+      }
+    } else {
+      // No button found, just generate PDF
+      console.log('🏗️ Generating PDF (no button found)...');
+      await pdfExporter.generatePDF(data);
+      console.log('✅ PDF export completed successfully');
+    }
+    
+  } catch (error) {
+    console.error("❌ Error in exportToPDF:", error);
+    alert("Có lỗi khi xuất file PDF. Vui lòng kiểm tra các thông tin đã nhập và thử lại.");
+    throw error;
+  }
+}
+
+// Make classes and functions globally available
+window.PDFExporter = PDFExporter;
+window.exportToPDF = exportToPDF;
+
+console.log('✅ PDF Export initialized successfully!');
+  } // end initializePDFExport
+})(); // end IIFE

@@ -1,0 +1,228 @@
+// Groq Debug Service - Enhanced logging for troubleshooting
+// Ultra-fast LLM inference with detailed debugging
+
+class GroqServiceDebug extends GroqService {
+    constructor() {
+        super();
+        this.debugMode = true;
+        console.log('🚀 GroqServiceDebug initialized');
+        console.log('📋 Configuration:', {
+            model: this.model,
+            maxTokens: this.maxTokens,
+            temperature: this.temperature,
+            hasApiKey: !!this.apiKey
+        });
+    }
+
+    // Enhanced API call with detailed logging
+    async makeAPICall(messages, options = {}) {
+        const startTime = Date.now();
+        
+        try {
+            console.log('🔵 Starting Groq API call...');
+            console.log('📨 Request messages:', messages);
+            console.log('⚙️ Options:', options);
+            
+            const requestBody = {
+                model: options.model || this.model,
+                messages: messages,
+                max_tokens: options.maxTokens || this.maxTokens,
+                temperature: options.temperature || this.temperature,
+                stream: false
+            };
+
+            console.log('📦 Request body:', requestBody);
+
+            const response = await fetch(this.apiUrl, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${this.apiKey}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(requestBody)
+            });
+
+            const duration = Date.now() - startTime;
+            console.log(`⏱️ Response time: ${duration}ms`);
+            console.log('📊 Response status:', response.status);
+            console.log('📊 Response headers:', Object.fromEntries(response.headers.entries()));
+
+            if (!response.ok) {
+                const errorData = await response.text();
+                console.error('❌ API Error Response:', errorData);
+                throw new Error(`Groq API error: ${response.status} - ${errorData}`);
+            }
+
+            const data = await response.json();
+            console.log('✅ API Response data:', data);
+            
+            const result = data.choices[0].message.content;
+            console.log(`🎉 Groq API call successful! (${duration}ms)`);
+            console.log('📝 Result length:', result.length, 'characters');
+            
+            return result;
+        } catch (error) {
+            const duration = Date.now() - startTime;
+            console.error(`❌ Groq API call failed after ${duration}ms:`, error);
+            console.error('🔍 Error details:', {
+                name: error.name,
+                message: error.message,
+                stack: error.stack
+            });
+            throw error;
+        }
+    }
+
+    // Debug version of checkConfiguration
+    async checkConfiguration() {
+        console.log('🔧 Checking Groq configuration...');
+        
+        try {
+            if (!this.apiKey || this.apiKey === 'YOUR_GROQ_API_KEY_HERE') {
+                console.warn('⚠️ Groq API key not configured');
+                console.log('Current API key:', this.apiKey ? `${this.apiKey.substring(0, 10)}...` : 'undefined');
+                return false;
+            }
+            
+            console.log('✅ API key found:', `${this.apiKey.substring(0, 15)}...`);
+            console.log('🌐 API URL:', this.apiUrl);
+            console.log('🤖 Model:', this.model);
+            
+            // Test API connection with simple request
+            console.log('🧪 Testing API connection...');
+            const testResponse = await this.testAPI();
+            console.log('✅ API test successful:', testResponse);
+            
+            return true;
+        } catch (error) {
+            console.error('❌ Configuration check failed:', error);
+            return false;
+        }
+    }
+
+    // Enhanced test API with more detailed output
+    async testAPI() {
+        console.log('🧪 Running Groq API test...');
+        
+        const messages = [
+            {
+                role: "system",
+                content: "Bạn là AI trợ lý thông minh và thân thiện."
+            },
+            {
+                role: "user",
+                content: "Xin chào! Groq API hoạt động tốt không? Hãy trả lời ngắn gọn bằng tiếng Việt."
+            }
+        ];
+
+        try {
+            const result = await this.makeAPICall(messages, { maxTokens: 100 });
+            console.log('🎉 Groq API test completed successfully!');
+            return result;
+        } catch (error) {
+            console.error('❌ Groq API test failed:', error);
+            throw error;
+        }
+    }
+
+    // Debug version of analyzeFengShui
+    async analyzeFengShui(data, detailLevel = 'detailed') {
+        console.log('🏠 Starting Feng Shui analysis with Groq...');
+        console.log('📊 Input data:', data);
+        console.log('📏 Detail level:', detailLevel);
+        
+        try {
+            const result = await super.analyzeFengShui(data, detailLevel);
+            console.log('✅ Feng Shui analysis completed successfully');
+            console.log('📝 Result preview:', result.substring(0, 200) + '...');
+            return result;
+        } catch (error) {
+            console.error('❌ Feng Shui analysis failed:', error);
+            throw error;
+        }
+    }
+
+    // Debug version of analyzeNumerology
+    async analyzeNumerology(data, detailLevel = 'detailed') {
+        console.log('🔢 Starting Numerology analysis with Groq...');
+        console.log('📊 Input data:', data);
+        console.log('📏 Detail level:', detailLevel);
+        
+        try {
+            const result = await super.analyzeNumerology(data, detailLevel);
+            console.log('✅ Numerology analysis completed successfully');
+            console.log('📝 Result preview:', result.substring(0, 200) + '...');
+            return result;
+        } catch (error) {
+            console.error('❌ Numerology analysis failed:', error);
+            throw error;
+        }
+    }
+
+    // Debug version of chatWithContext
+    async chatWithContext(userMessage, userData, options = {}) {
+        console.log('💬 Starting AI Chat with context...');
+        console.log('� User message:', userMessage);
+        console.log('�📊 User data:', userData);
+        console.log('⚙️ Options:', options);
+        
+        try {
+            const result = await super.chatWithContext(userMessage, userData, options);
+            console.log('✅ AI Chat completed successfully');
+            console.log('📝 Response preview:', result.substring(0, 200) + '...');
+            return result;
+        } catch (error) {
+            console.error('❌ AI Chat failed:', error);
+            throw error;
+        }
+    }
+
+    // Performance benchmark
+    async benchmarkAPI() {
+        console.log('🏃‍♂️ Running Groq API performance benchmark...');
+        
+        const tests = [
+            'Test ngắn',
+            'Test trung bình với nội dung dài hơn một chút để kiểm tra hiệu suất',
+            'Test dài với rất nhiều nội dung để đánh giá khả năng xử lý của Groq API khi có input lớn và yêu cầu response chi tiết hơn'
+        ];
+        
+        const results = [];
+        
+        for (let i = 0; i < tests.length; i++) {
+            const startTime = Date.now();
+            try {
+                const result = await this.makeAPICall([
+                    { role: "user", content: tests[i] }
+                ], { maxTokens: 50 });
+                
+                const duration = Date.now() - startTime;
+                results.push({ test: i + 1, duration, success: true });
+                console.log(`✅ Test ${i + 1}: ${duration}ms`);
+            } catch (error) {
+                const duration = Date.now() - startTime;
+                results.push({ test: i + 1, duration, success: false, error: error.message });
+                console.log(`❌ Test ${i + 1}: ${duration}ms (failed)`);
+            }
+        }
+        
+        console.log('📊 Benchmark results:', results);
+        return results;
+    }
+}
+
+// Export for use in other files
+window.GroqServiceDebug = GroqServiceDebug;
+
+// Auto-test on load if debug mode
+if (typeof window !== 'undefined' && window.CONFIG?.DEBUG_MODE) {
+    window.addEventListener('load', async () => {
+        console.log('🔍 Auto-testing Groq in debug mode...');
+        try {
+            const debugService = new GroqServiceDebug();
+            await debugService.checkConfiguration();
+        } catch (error) {
+            console.error('❌ Auto-test failed:', error);
+        }
+    });
+}
